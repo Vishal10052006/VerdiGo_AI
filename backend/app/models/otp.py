@@ -1,18 +1,66 @@
-from sqlalchemy import Column, String, DateTime
-from sqlalchemy.dialects.postgresql import UUID
-from datetime import datetime
 import uuid
+
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    Boolean,
+    DateTime
+)
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 
 from app.database.base import Base
 
 
 class OTP(Base):
-    __tablename__ = "otp_codes"
+    __tablename__ = "otp"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # =========================
+    # Primary Key
+    # =========================
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
 
-    mobile = Column(String, nullable=False)
+    # =========================
+    # OTP Information
+    # =========================
+    mobile = Column(
+        String(20),
+        nullable=False,
+        index=True
+    )
 
-    otp = Column(String, nullable=False)
+    otp = Column(
+        String(6),
+        nullable=False
+    )
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    expiry_time = Column(
+        DateTime(timezone=True),
+        nullable=False
+    )
+
+    attempt_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    is_used = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    # =========================
+    # Timestamp
+    # =========================
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )

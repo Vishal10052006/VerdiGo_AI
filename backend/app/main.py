@@ -2,6 +2,10 @@ from fastapi import FastAPI
 
 from app.routes import otp
 from app.routes.auth import router as auth_router
+from app.routes.login import router as login_router
+from app.routes.farmer import router as farmer_router
+
+from fastapi.security import HTTPBearer
 
 app = FastAPI(
     title="VerdiGO AI API",
@@ -11,6 +15,8 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(otp.router)
+app.include_router(login_router)
+app.include_router(farmer_router)
 
 
 @app.get("/")
