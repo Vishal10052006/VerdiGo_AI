@@ -12,7 +12,6 @@ class SuccessResponse(BaseModel):
 class ErrorResponse(BaseModel):
     success: bool = False
     message: str
-    errors: Any | None = None
 
 
 class PaginatedResponse(BaseModel):
