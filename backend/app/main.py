@@ -1,24 +1,58 @@
+"""
+VerdiGO AI Backend
+
+Main FastAPI application.
+
+Responsibilities:
+- Create FastAPI application
+- Register middleware
+- Register API routers
+- Expose root endpoint
+"""
+
 from fastapi import FastAPI
+
+from app.core.middleware import AuthenticationMiddleware
 
 from app.routes import otp
 from app.routes.auth import router as auth_router
-from app.routes.login import router as login_router
 from app.routes.farmer import router as farmer_router
 
-from fastapi.security import HTTPBearer
 
+# =====================================================
+# FastAPI Application
+# =====================================================
 app = FastAPI(
     title="VerdiGO AI API",
     description="AI Powered Farmer Companion",
     version="1.0.0"
 )
 
+
+# =====================================================
+# Register Global Middleware
+# =====================================================
+app.add_middleware(
+    AuthenticationMiddleware
+)
+
+
+# =====================================================
+# Register API Routers
+# =====================================================
 app.include_router(auth_router)
 app.include_router(otp.router)
-app.include_router(login_router)
 app.include_router(farmer_router)
 
 
+# =====================================================
+# Root Endpoint
+#
+# Used for:
+# - Health check
+# - API welcome message
+# - Quick deployment verification
+# =====================================================
 @app.get("/")
 def root():
     return {
