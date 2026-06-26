@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     OTP_LENGTH: int
     OTP_EXPIRE_MINUTES: int
     OTP_MAX_ATTEMPTS: int
+    SMS_PROVIDER_URL: str = ""
+    SMS_PROVIDER_API_KEY: str = ""
+    SMS_SENDER_ID: str = ""
 
     # =========================
     # CORS

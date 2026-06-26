@@ -32,6 +32,19 @@ def mark_used(db: Session, otp: OTP) -> OTP:
     return otp
 
 
+def increment_attempt(
+    db: Session,
+    otp: OTP
+) -> OTP:
+
+    otp.attempt_count += 1
+
+    db.commit()
+    db.refresh(otp)
+
+    return otp
+
+
 def delete_expired(db: Session) -> int:
     deleted_count = (
         db.query(OTP)

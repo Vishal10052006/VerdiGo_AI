@@ -1,29 +1,67 @@
-from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-SECRET_KEY = "verdigo_super_secret_key"
+from jose import JWTError, jwt
 
-ALGORITHM = "HS256"
-
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+from app.config.settings import settings
 
 
-def create_access_token(data: dict):
-
-    to_encode = data.copy()
-
-    expire = datetime.now() + timedelta(
-        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+def create_access_token(user_id: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
-    to_encode.update({
-        "exp": expire
-    })
+    payload = {
+        "sub": user_id,
+        "exp": expire,
+        "type": "access"
+    }
 
-    encoded_jwt = jwt.encode(
-        to_encode,
-        SECRET_KEY,
-        algorithm=ALGORITHM
+    return jwt.encode(
+        payload,
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM
     )
 
-    return encoded_jwt
+
+def create_refresh_token(user_id: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )
+
+    payload = {
+        "sub": user_id,
+        "exp": expire,
+        "type": "refresh"
+    }
+
+    return jwt.encode(
+        payload,
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM
+    )
+
+
+def decode_token(token: str) -> dict | None:
+    try:
+        return jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM]
+        )
+    except JWTError:
+        return None
+    
+def verify_token(
+    token: str,
+    token_type: str = "access"
+) -> dict | None:
+
+    payload = decode_token(token)
+
+    if payload is None:
+        return None
+
+    if payload.get("type") != token_type:
+        return None
+
+    return payload

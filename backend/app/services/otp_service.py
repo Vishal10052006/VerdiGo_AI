@@ -1,40 +1,91 @@
 import random
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
+from app.config.settings import settings
 from app.models.otp import OTP
+from app.repositories import otp_repository
 
 
-def save_otp(db: Session, mobile: str):
-
-    otp = str(random.randint(100000, 999999))
-
-    otp_record = OTP(
-        mobile=mobile,
-        otp=otp
+def generate_otp() -> str:
+    return "".join(
+        random.choices(
+            "0123456789",
+            k=settings.OTP_LENGTH
+        )
     )
 
-    db.add(otp_record)
-    db.commit()
-    db.refresh(otp_record)
 
-    return otp_record
-
-
-def verify_otp(
+def save_otp(
     db: Session,
     mobile: str,
     otp: str
-):
+) -> OTP:
 
-    otp_record = (
-        db.query(OTP)
-        .filter(
-            OTP.mobile == mobile,
-            OTP.otp == otp
-        )
-        .order_by(OTP.created_at.desc())
-        .first()
+    expiry_time = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.OTP_EXPIRE_MINUTES
     )
 
-    return otp_record
+    otp_record = OTP(
+        mobile=mobile,
+        otp=otp,
+        expiry_time=expiry_time
+    )
+
+    return otp_repository.create(
+        db=db,
+        otp=otp_record
+    )
+
+
+def validate_otp(
+    db: Session,
+    mobile: str,
+    entered_otp: str
+) -> bool:
+
+    latest_otp = otp_repository.get_latest(
+        db=db,
+        mobile=mobile
+    )
+
+    if latest_otp is None:
+        return False
+
+    return latest_otp.otp == entered_otp
+
+
+def check_expiry(
+    db: Session,
+    mobile: str
+) -> bool:
+
+    latest_otp = otp_repository.get_latest(
+        db=db,
+        mobile=mobile
+    )
+
+    if latest_otp is None:
+        return False
+
+    return latest_otp.expiry_time > datetime.now(timezone.utc)
+
+
+def check_attempts(
+    db: Session,
+    mobile: str
+) -> bool:
+
+    latest_otp = otp_repository.get_latest(
+        db=db,
+        mobile=mobile
+    )
+
+    if latest_otp is None:
+        return False
+
+    return (
+        latest_otp.attempt_count
+        < settings.OTP_MAX_ATTEMPTS
+    )
