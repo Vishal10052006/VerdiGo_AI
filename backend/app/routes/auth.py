@@ -25,6 +25,7 @@ from app.schemas.auth import (
     RefreshTokenRequest,
     OTPResponse,
     LoginResponse,
+    RefreshResponse
 )
 from app.schemas.common import SuccessResponse
 from app.schemas.user import UserResponse
@@ -162,6 +163,11 @@ def logout():
 # Uses a valid Refresh Token
 # to generate a new Access Token.
 #
+# Future Use:
+# • Validate refresh token against stored sessions
+# • Rotate refresh tokens after each refresh
+# • Revoke refresh token on logout or suspicious activity
+#
 # Access Token Expired
 #          ↓
 # Refresh Token
@@ -170,7 +176,7 @@ def logout():
 # =====================================================
 @router.post(
     "/refresh",
-    response_model=SuccessResponse,
+    response_model=RefreshResponse,
 )
 def refresh(
     request: RefreshTokenRequest,

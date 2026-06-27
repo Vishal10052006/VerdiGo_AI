@@ -12,9 +12,10 @@ Responsibilities:
 
 from fastapi import FastAPI
 
+import app.core.logging
+
 from app.core.middleware import AuthenticationMiddleware
 
-from app.routes import otp
 from app.routes.auth import router as auth_router
 from app.routes.farmer import router as farmer_router
 
@@ -41,7 +42,6 @@ app.add_middleware(
 # Register API Routers
 # =====================================================
 app.include_router(auth_router)
-app.include_router(otp.router)
 app.include_router(farmer_router)
 
 

@@ -1,20 +1,22 @@
 import json
 import logging
 from urllib import request
-
 from sqlalchemy.orm import Session
-
 from app.config.settings import settings
 from app.models.user import User
 from app.repositories import (
+    otp_repository,
     user_repository,
-    otp_repository
 )
-
 from app.services import (
+    jwt_service,
     otp_service,
-    jwt_service
 )
+from app.core.exceptions import (
+    BadRequestException,
+    UnauthorizedException,
+)
+logger = logging.getLogger(__name__)
 
 
 logger = logging.getLogger(__name__)
@@ -119,28 +121,24 @@ def verify_otp(
     )
 
     if latest_otp is None:
-        return {
-            "success": False,
-            "message": "OTP not found"
-        }
+        raise BadRequestException(
+            message="OTP not found."
+        )
     
     if latest_otp.is_used:
-        return {
-            "success": False,
-            "message": "OTP already used"
-        }
+        raise BadRequestException(
+            message="OTP already used."
+        )
 
     if not otp_service.check_expiry(db, mobile):
-        return {
-            "success": False,
-            "message": "OTP expired"
-        }
+        raise BadRequestException(
+            message="OTP expired."
+        )
 
     if not otp_service.check_attempts(db, mobile):
-        return {
-            "success": False,
-            "message": "Maximum attempts exceeded"
-        }
+        raise BadRequestException(
+            message="Maximum OTP attempts exceeded."
+        )
 
     if not otp_service.validate_otp(
         db,
@@ -152,10 +150,9 @@ def verify_otp(
             otp=latest_otp
         )
 
-        return {
-            "success": False,
-            "message": "Invalid OTP"
-        }
+        raise BadRequestException(
+            message="Invalid OTP."
+        )
 
     otp_repository.mark_used(
         db=db,
@@ -193,10 +190,9 @@ def refresh_access_token(
     )
 
     if payload is None:
-        return {
-            "success": False,
-            "message": "Invalid refresh token"
-        }
+        raise UnauthorizedException(
+            message="Invalid refresh token."
+        )
 
     access_token = jwt_service.create_access_token(
         payload["sub"]

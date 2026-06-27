@@ -1,35 +1,31 @@
 from fastapi import HTTPException, status
 
 
-class InvalidOTPException(HTTPException):
-    def __init__(self):
+# =====================================================
+# Generic Exceptions
+# =====================================================
+
+class BadRequestException(HTTPException):
+    def __init__(self, message: str):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OTP."
-        )
-
-
-class OTPExpiredException(HTTPException):
-    def __init__(self):
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="OTP has expired."
+            detail=message
         )
 
 
 class UnauthorizedException(HTTPException):
-    def __init__(self):
+    def __init__(self, message: str = "Unauthorized."):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized."
+            detail=message
         )
 
 
 class ForbiddenException(HTTPException):
-    def __init__(self):
+    def __init__(self, message: str = "Forbidden."):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden."
+            detail=message
         )
 
 
@@ -41,9 +37,20 @@ class UserNotFoundException(HTTPException):
         )
 
 
-class InvalidTokenException(HTTPException):
+# =====================================================
+# Authentication Exceptions
+# =====================================================
+
+class InvalidOTPException(BadRequestException):
     def __init__(self):
-        super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token."
-        )
+        super().__init__("Invalid OTP.")
+
+
+class OTPExpiredException(BadRequestException):
+    def __init__(self):
+        super().__init__("OTP has expired.")
+
+
+class InvalidTokenException(UnauthorizedException):
+    def __init__(self):
+        super().__init__("Invalid or expired token.")

@@ -49,3 +49,8 @@ class LoginResponse(BaseModel):
     access_token: str
     refresh_token: str
     user: UserResponse
+
+
+class RefreshResponse(BaseModel):
+    success: bool = True
+    access_token: str

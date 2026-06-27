@@ -1,13 +1,16 @@
-from uuid import UUID
-
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+)
+
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import (
     UnauthorizedException,
     ForbiddenException,
 )
+
 from app.database.database import get_db
 from app.models.user import User
 from app.repositories import user_repository
@@ -15,36 +18,45 @@ from app.services.jwt_service import verify_token
 
 
 # =====================================================
-# OAuth2 Authentication Scheme
+# HTTP Bearer Authentication Scheme
 #
-# Extracts JWT from:
+# Reads JWT from:
+#
 # Authorization: Bearer <access_token>
 #
-# tokenUrl is used by Swagger/OpenAPI to know
-# where the login endpoint is.
+# Used by all protected APIs.
 # =====================================================
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/login"
+bearer_scheme = HTTPBearer(
+    auto_error=True
 )
 
 
 # =====================================================
 # Verify Access Token
 #
-# - Decode JWT
-# - Verify signature
-# - Verify expiration
-# - Verify token type == "access"
-#
-# Returns:
-#     Decoded JWT payload
+# Flow:
+# Authorization Header
+#        ↓
+# HTTPBearer
+#        ↓
+# Extract JWT
+#        ↓
+# Verify Signature
+#        ↓
+# Verify Expiry
+#        ↓
+# Verify Token Type
+#        ↓
+# Return JWT Payload
 # =====================================================
 def verify_access_token(
-    token: str = Depends(oauth2_scheme)
+    credentials: HTTPAuthorizationCredentials = Depends(
+        bearer_scheme
+    )
 ) -> dict:
 
     payload = verify_token(
-        token=token,
+        token=credentials.credentials,
         token_type="access"
     )
 
@@ -57,15 +69,17 @@ def verify_access_token(
 # =====================================================
 # Verify Refresh Token
 #
-# Used only while creating
+# Used only while issuing
 # a new access token.
 # =====================================================
 def verify_refresh_token(
-    token: str = Depends(oauth2_scheme)
+    credentials: HTTPAuthorizationCredentials = Depends(
+        bearer_scheme
+    )
 ) -> dict:
 
     payload = verify_token(
-        token=token,
+        token=credentials.credentials,
         token_type="refresh"
     )
 
@@ -82,7 +96,7 @@ def verify_refresh_token(
 #
 # Authorization Header
 #        ↓
-# OAuth2PasswordBearer
+# HTTPBearer
 #        ↓
 # Verify Access Token
 #        ↓
@@ -103,7 +117,7 @@ def get_current_user(
 
     user = user_repository.get_by_id(
         db=db,
-        user_id=UUID(payload["sub"])
+        user_id=payload["sub"]
     )
 
     if user is None:
@@ -118,17 +132,15 @@ def get_current_user(
 # Ensures the authenticated user
 # has an active account.
 #
-# Future use:
-# Protect normal application routes.
+# Future Use:
+# Protect application routes.
 # =====================================================
 def get_current_active_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
 
     if not current_user.is_active:
-        raise ForbiddenException(
-            detail="User account is inactive."
-        )
+        raise ForbiddenException()
 
     return current_user
 
@@ -139,18 +151,16 @@ def get_current_active_user(
 # Ensures the authenticated user
 # has administrator privileges.
 #
-# Future use:
-# Admin dashboard
-# User management
-# Analytics
+# Future Use:
+# - Admin Dashboard
+# - User Management
+# - Analytics
 # =====================================================
 def get_current_admin_user(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
 
     if current_user.role != "admin":
-        raise ForbiddenException(
-            detail="Admin access required."
-        )
+        raise ForbiddenException()
 
     return current_user
