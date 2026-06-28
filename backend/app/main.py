@@ -19,6 +19,8 @@ from app.core.middleware import AuthenticationMiddleware
 from app.routes.auth import router as auth_router
 from app.routes.farmer import router as farmer_router
 
+from app.routes.farm import router as farm_router
+
 
 # =====================================================
 # FastAPI Application
@@ -43,6 +45,7 @@ app.add_middleware(
 # =====================================================
 app.include_router(auth_router)
 app.include_router(farmer_router)
+app.include_router(farm_router)
 
 
 # =====================================================

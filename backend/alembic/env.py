@@ -1,6 +1,7 @@
 from app.database.base import Base
-from app.models.user import User
-from app.models.otp import OTP
+
+# Import all models so Alembic can discover them
+import app.models
 
 from logging.config import fileConfig
 
