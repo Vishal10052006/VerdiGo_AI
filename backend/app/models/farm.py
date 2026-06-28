@@ -1,14 +1,12 @@
 """
-Farmer Profile Model
+Farm Model
 
-This module defines the FarmerProfile database model used to store
-personal information of registered farmers.
+This module defines the Farm database model.
 
 Responsibilities:
-- Store farmer personal details.
-- Link one farmer profile to one authenticated user.
-- Track profile completion status.
-- Act as the parent entity for farm information.
+- Store farm information.
+- Link farms to a farmer profile.
+- Store land details and GPS coordinates.
 
 Module:
 Phase 1 → Module 2 → Farmer Registration
@@ -23,40 +21,41 @@ Author: VerdiGO Backend Team
 import uuid
 
 from sqlalchemy import (
-    Boolean,
     Column,
-    ForeignKey,
-    Integer,
-    String,
     DateTime,
     Enum,
+    Float,
+    ForeignKey,
+    Numeric,
+    String,
 )
+
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.database.base import Base
-from app.enums.gender import GenderEnum
+from app.enums.land_unit import LandUnitEnum
+from app.enums.soil_type import SoilTypeEnum
 
 
 # ============================================================================
-# Farmer Profile Model
+# Farm Model
 # ============================================================================
 
-class FarmerProfile(Base):
+class Farm(Base):
     """
-    Represents a farmer profile.
+    Represents a farm owned by a farmer.
 
     Relationships:
-        User (1) ----------> FarmerProfile (1)
-        FarmerProfile (1) -> Farm (Many)
+        FarmerProfile (1) --------> Farm (Many)
     """
 
     # ------------------------------------------------------------------------
     # Table Configuration
     # ------------------------------------------------------------------------
 
-    __tablename__ = "farmer_profiles"
+    __tablename__ = "farms"
 
     # ------------------------------------------------------------------------
     # Primary Key
@@ -72,54 +71,47 @@ class FarmerProfile(Base):
     # Foreign Key
     # ------------------------------------------------------------------------
 
-    user_id = Column(
+    farmer_profile_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        unique=True,
-    )
-
-    # ------------------------------------------------------------------------
-    # Personal Information
-    # ------------------------------------------------------------------------
-
-    full_name = Column(
-        String(100),
-        nullable=False,
-    )
-
-    age = Column(
-        Integer,
-        nullable=False,
-    )
-
-    gender = Column(
-        Enum(GenderEnum),
-        nullable=False,
-    )
-
-    state = Column(
-        String(100),
-        nullable=False,
-    )
-
-    district = Column(
-        String(100),
-        nullable=False,
-    )
-
-    village = Column(
-        String(100),
+        ForeignKey("farmer_profiles.id", ondelete="CASCADE"),
         nullable=False,
     )
 
     # ------------------------------------------------------------------------
-    # Profile Status
+    # Farm Information
     # ------------------------------------------------------------------------
 
-    profile_completed = Column(
-        Boolean,
-        default=False,
+    farm_name = Column(
+        String(100),
+        nullable=False,
+    )
+
+    land_area = Column(
+        Numeric(10, 2),
+        nullable=False,
+    )
+
+    land_unit = Column(
+        Enum(LandUnitEnum),
+        nullable=True,
+    )
+
+    soil_type = Column(
+        Enum(SoilTypeEnum),
+        nullable=False,
+    )
+
+    # ------------------------------------------------------------------------
+    # GPS Location
+    # ------------------------------------------------------------------------
+
+    latitude = Column(
+        Float,
+        nullable=False,
+    )
+
+    longitude = Column(
+        Float,
         nullable=False,
     )
 
@@ -144,13 +136,7 @@ class FarmerProfile(Base):
     # Relationships
     # ------------------------------------------------------------------------
 
-    user = relationship(
-        "User",
-        back_populates="farmer_profile",
-    )
-
-    farms = relationship(
-        "Farm",
-        back_populates="farmer_profile",
-        cascade="all, delete-orphan",
+    farmer_profile = relationship(
+        "FarmerProfile",
+        back_populates="farms",
     )

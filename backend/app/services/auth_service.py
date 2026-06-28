@@ -19,9 +19,6 @@ from app.core.exceptions import (
 logger = logging.getLogger(__name__)
 
 
-logger = logging.getLogger(__name__)
-
-
 def send_otp_sms(
     mobile: str,
     otp: str

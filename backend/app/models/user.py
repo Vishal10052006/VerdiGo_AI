@@ -16,6 +16,8 @@ from sqlalchemy.sql import func
 
 from app.database.base import Base
 
+from sqlalchemy.orm import relationship
+
 
 class User(Base):
     __tablename__ = "users"
@@ -105,4 +107,16 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False
+    )
+
+    # =========================
+    # Relationships
+    # =========================
+
+    # One User -> One Farmer Profile
+    farmer_profile = relationship(
+        "FarmerProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
     )
