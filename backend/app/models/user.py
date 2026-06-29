@@ -54,16 +54,12 @@ class User(Base):
     )
 
     # =========================
-    # Profile
+    # Profile Image
     # =========================
-    full_name = Column(
-        String(255),
-        nullable=True
-    )
-
-    profile_image = Column(
+    profile_image_url = Column(
         String(500),
-        nullable=True
+        nullable=True,
+        comment="Relative or absolute URL of the user's profile image."
     )
 
     language = Column(
