@@ -20,6 +20,7 @@ Author: VerdiGO Backend Team
 # Imports
 # ============================================================================
 
+from dataclasses import fields
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -188,27 +189,20 @@ def get_profile_completion(
     Calculate farmer profile completion percentage.
     """
 
-    total_fields = 5
-    completed = 0
+    fields = [
+        bool(user.profile_image_url),
+        bool(farmer_profile),
+        bool(farms),
+        bool(user.email),
+        bool(
+            farmer_profile
+            and farmer_profile.state
+            and farmer_profile.district
+            and farmer_profile.village
+        ),
+    ]
 
-    if user.profile_image_url:
-        completed += 1
-
-    if farmer_profile:
-        completed += 1
-
-    if farms:
-        completed += 1
-
-    if user.email:
-        completed += 1
-
-    if (
-        farmer_profile
-        and farmer_profile.state
-        and farmer_profile.district
-        and farmer_profile.village
-    ):
-        completed += 1
+    completed = sum(fields)
+    total_fields = len(fields)
 
     return int((completed / total_fields) * 100)

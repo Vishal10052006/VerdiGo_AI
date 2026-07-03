@@ -68,6 +68,19 @@ class ProfileDetailsSuccessResponse(SuccessResponse):
 
 
 # ============================================================================
+# Profile Image Upload Request
+# ============================================================================
+
+class ProfileImageUploadRequest(BaseModel):
+    """
+    Request schema used to upload
+    or update the user's profile image.
+    """
+
+    profile_image_url: str
+
+
+# ============================================================================
 # Profile Image Upload Response
 # ============================================================================
 
