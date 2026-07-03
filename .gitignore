@@ -23,3 +23,7 @@ __pycache__/
 
 # Temporary backup files
 *.save
+
+# Uploaded user files
+backend/uploads/profile/*
+!backend/uploads/profile/.gitkeep

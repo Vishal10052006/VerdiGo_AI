@@ -108,7 +108,7 @@ def update_profile_image(
     profile_image_url: str,
 ) -> User:
     """
-    Update the user's profile image.
+    Update the user's profile image URL.
     """
 
     user.profile_image_url = profile_image_url

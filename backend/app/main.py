@@ -11,6 +11,8 @@ Responsibilities:
 """
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from app.config.settings import settings
 
 import app.core.logging
 
@@ -49,6 +51,21 @@ app.include_router(auth_router)
 app.include_router(farmer_router)
 app.include_router(farm_router)
 app.include_router(profile_router)
+
+
+# =====================================================
+# Static Files
+#
+# Serves uploaded profile images.
+# Example:
+# http://127.0.0.1:8000/uploads/profile/image.jpg
+# =====================================================
+
+app.mount(
+    "/uploads",
+    StaticFiles(directory=settings.UPLOAD_DIR),
+    name="uploads",
+)
 
 
 # =====================================================

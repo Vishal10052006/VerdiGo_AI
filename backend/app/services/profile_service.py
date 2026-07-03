@@ -20,6 +20,13 @@ Author: VerdiGO Backend Team
 # Imports
 # ============================================================================
 
+import os
+import uuid
+
+from fastapi import UploadFile
+
+from app.config.settings import settings
+
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -109,12 +116,15 @@ def update_profile(
 def upload_profile_image(
     db: Session,
     user_id: UUID,
-    profile_image_url: str,
-):
+    file: UploadFile,
+) -> str:
     """
-    Update user's profile image.
+    Upload and update the user's profile image.
     """
 
+    # ------------------------------------------------------------
+    # Validate User
+    # ------------------------------------------------------------
     user = profile_repository.get_user(
         db=db,
         user_id=user_id,
@@ -125,18 +135,79 @@ def upload_profile_image(
             "User not found."
         )
 
-    profile_image_url = profile_image_url.strip()
+    # ------------------------------------------------------------
+    # Validate File Extension
+    # ------------------------------------------------------------
+    extension = os.path.splitext(
+        file.filename
+    )[1].lower()
 
-    if not profile_image_url:
+    if extension not in settings.ALLOWED_IMAGE_EXTENSIONS:
         raise ValueError(
-            "Profile image URL cannot be empty."
+            "Invalid image format."
         )
 
-    return profile_repository.update_profile_image(
+    # ------------------------------------------------------------
+    # Validate File Size
+    # ------------------------------------------------------------
+    contents = file.file.read()
+    file.file.seek(0)
+
+    if len(contents) > settings.MAX_IMAGE_SIZE:
+        raise ValueError(
+            "Image exceeds maximum size of 5 MB."
+        )
+
+    # ------------------------------------------------------------
+    # Generate Unique Filename
+    # ------------------------------------------------------------
+    filename = f"{uuid.uuid4()}{extension}"
+
+    file_path = os.path.join(
+        settings.PROFILE_UPLOAD_DIR,
+        filename,
+    )
+
+    # ------------------------------------------------------------
+    # Delete Previous Image
+    # ------------------------------------------------------------
+    if user.profile_image_url:
+
+        old_file = user.profile_image_url.replace(
+            "/uploads/profile/",
+            "",
+        )
+
+        old_path = os.path.join(
+            settings.PROFILE_UPLOAD_DIR,
+            old_file,
+        )
+
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    # ------------------------------------------------------------
+    # Save Image
+    # ------------------------------------------------------------
+    with open(file_path, "wb") as image:
+
+        image.write(contents)
+
+    # ------------------------------------------------------------
+    # Public URL
+    # ------------------------------------------------------------
+    image_url = f"/uploads/profile/{filename}"
+
+    # ------------------------------------------------------------
+    # Update Database
+    # ------------------------------------------------------------
+    profile_repository.update_profile_image(
         db=db,
         user=user,
-        profile_image_url=profile_image_url,
+        profile_image_url=image_url,
     )
+
+    return image_url
 
 
 # ============================================================================

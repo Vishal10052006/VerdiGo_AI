@@ -38,7 +38,8 @@ from app.schemas.profile import (
 from app.schemas.farmer import (
     FarmerProfileUpdate,
     FarmerProfileSuccessResponse,
-) 
+)
+from fastapi import UploadFile, File
 
 
 # ============================================================================
@@ -139,7 +140,7 @@ def update_profile(
     status_code=status.HTTP_200_OK,
 )
 def upload_profile_image(
-    profile_image: ProfileImageUploadRequest,
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -149,17 +150,17 @@ def upload_profile_image(
 
     try:
 
-        updated_user = profile_service.upload_profile_image(
+        image_url = profile_service.upload_profile_image(
             db=db,
             user_id=current_user.id,
-            profile_image_url=profile_image.profile_image_url,
+            file=file,
         )
 
         return ProfileImageUploadSuccessResponse(
             success=True,
             message="Profile image uploaded successfully.",
             data=ProfileImageUploadResponse(
-                profile_image_url=updated_user.profile_image_url,
+                profile_image_url=image_url,
             ),
         )
 

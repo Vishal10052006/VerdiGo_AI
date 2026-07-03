@@ -43,5 +43,27 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+    # ===========================
+    # File Upload
+    # ===========================
+
+    UPLOAD_DIR: str = "uploads"
+
+    PROFILE_UPLOAD_DIR: str = "uploads/profile"
+
+    MAX_IMAGE_SIZE: int = 5 * 1024 * 1024  # 5 MB
+
+    ALLOWED_IMAGE_EXTENSIONS: tuple[str, ...] = (
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+    )
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+    )
+
 
 settings = Settings()
