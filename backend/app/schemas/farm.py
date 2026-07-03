@@ -142,7 +142,7 @@ class FarmBase(BaseModel):
     # ------------------------------------------------------------------------
     # Latitude Validation
     # ------------------------------------------------------------------------
-
+                                                   
     @field_validator("latitude")
     @classmethod
     def validate_latitude(cls, value: float) -> float:
