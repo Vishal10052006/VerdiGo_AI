@@ -23,11 +23,20 @@ Author: VerdiGO Backend Team
 from dataclasses import fields
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.user import User
 from app.models.farmer_profile import FarmerProfile
 from app.models.farm import Farm
+
+
+# ==========================================================
+# Repository Layer Notes
+#
+# This layer performs only database operations.
+# Business validation is handled in the service layer.
+# HTTP responses are handled in the route layer.
+# ==========================================================
 
 
 # ============================================================================
@@ -47,6 +56,10 @@ def get_complete_profile(
 
     user = (
         db.query(User)
+        .options(
+            joinedload(User.farmer_profile)
+            .joinedload(FarmerProfile.farms)
+        )
         .filter(User.id == user_id)
         .first()
     )
@@ -54,20 +67,13 @@ def get_complete_profile(
     if not user:
         return None
 
-    farmer_profile = (
-        db.query(FarmerProfile)
-        .filter(FarmerProfile.user_id == user_id)
-        .first()
+    farmer_profile = user.farmer_profile
+
+    farms = (
+        farmer_profile.farms
+        if farmer_profile
+        else []
     )
-
-    farms = []
-
-    if farmer_profile:
-        farms = (
-            db.query(Farm)
-            .filter(Farm.farmer_profile_id == farmer_profile.id)
-            .all()
-        )
 
     return {
         "user": user,
