@@ -34,15 +34,28 @@ class Settings(BaseSettings):
     SMS_SENDER_ID: str = ""
 
     # =========================
+    # Weather
+    # =========================
+
+    WEATHERAPI_API_KEY: str
+
+    WEATHERAPI_BASE_URL: str
+
+    OPENMETEO_BASE_URL: str
+
+    PRIMARY_WEATHER_PROVIDER: str
+
+    FALLBACK_WEATHER_PROVIDER: str
+
+    WEATHER_REQUEST_TIMEOUT: int
+
+    WEATHER_CACHE_MINUTES: int
+
+    # =========================
     # CORS
     # =========================
     ALLOWED_ORIGINS: str
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        extra="ignore"
-    )
-
+    
     # ===========================
     # File Upload
     # ===========================
