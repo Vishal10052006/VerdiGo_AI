@@ -25,6 +25,8 @@ from app.routes.farm import router as farm_router
 
 from app.routes.profile import router as profile_router
 
+from app.routes.dashboard import router as dashboard_router
+
 
 # =====================================================
 # FastAPI Application
@@ -51,6 +53,7 @@ app.include_router(auth_router)
 app.include_router(farmer_router)
 app.include_router(farm_router)
 app.include_router(profile_router)
+app.include_router(dashboard_router)
 
 
 # =====================================================
@@ -77,7 +80,7 @@ app.mount(
 # - Quick deployment verification
 # =====================================================
 @app.get("/")
-def root():
+def root() -> dict[str, str]:
     return {
         "message": "Welcome to VerdiGO AI"
     }
