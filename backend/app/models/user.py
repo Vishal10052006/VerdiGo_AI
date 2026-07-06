@@ -6,11 +6,6 @@ from sqlalchemy import (
     String
 )
 
-from sqlalchemy import (
-    Boolean,
-    DateTime,
-    String
-)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 

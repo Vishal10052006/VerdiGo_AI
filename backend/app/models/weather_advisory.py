@@ -1,15 +1,16 @@
 """
-Farm Model
+Weather Advisory Model
 
-This module defines the Farm database model.
+Stores AI-generated weather advisories for farms.
 
 Responsibilities:
-- Store farm information.
-- Link farms to a farmer profile.
-- Store land details and GPS coordinates.
+- Store generated advisories
+- Track advisory severity
+- Track read/unread status
+- Maintain advisory history
 
 Module:
-Phase 1 → Module 2 → Farmer Registration
+Phase 1 → Module 5 → Weather Intelligence
 
 Author: VerdiGO Backend Team
 """
@@ -21,13 +22,14 @@ Author: VerdiGO Backend Team
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Enum,
-    Float,
     ForeignKey,
-    Numeric,
     String,
+    Text,
+    Index,
 )
 
 from sqlalchemy.dialects.postgresql import UUID
@@ -35,27 +37,48 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.database.base import Base
-from app.enums.land_unit import LandUnitEnum
-from app.enums.soil_type import SoilTypeEnum
+from app.enums.advisory_type import AdvisoryTypeEnum
+from app.enums.advisory_severity import AdvisorySeverityEnum
 
 
 # ============================================================================
-# Farm Model
+# Weather Advisory Model
 # ============================================================================
 
-class Farm(Base):
+class WeatherAdvisory(Base):
     """
-    Represents a farm owned by a farmer.
-
-    Relationships:
-        FarmerProfile (1) --------> Farm (Many)
+    Stores AI-generated weather advisories.
     """
 
     # ------------------------------------------------------------------------
     # Table Configuration
     # ------------------------------------------------------------------------
 
-    __tablename__ = "farms"
+    __tablename__ = "weather_advisories"
+
+    __table_args__ = (
+
+        Index(
+            "idx_advisory_farm",
+            "farm_id",
+        ),
+
+        Index(
+            "idx_advisory_created",
+            "created_at",
+        ),
+
+        Index(
+            "idx_advisory_read",
+            "is_read",
+        ),
+
+        Index(
+            "idx_advisory_severity",
+            "severity",
+        ),
+
+    )
 
     # ------------------------------------------------------------------------
     # Primary Key
@@ -68,51 +91,52 @@ class Farm(Base):
     )
 
     # ------------------------------------------------------------------------
-    # Foreign Key
+    # Farm Reference
     # ------------------------------------------------------------------------
 
-    farmer_profile_id = Column(
+    farm_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("farmer_profiles.id", ondelete="CASCADE"),
+        ForeignKey("farms.id", ondelete="CASCADE"),
         nullable=False,
     )
 
     # ------------------------------------------------------------------------
-    # Farm Information
+    # Advisory Information
     # ------------------------------------------------------------------------
 
-    farm_name = Column(
-        String(100),
+    advisory_type = Column(
+        Enum(AdvisoryTypeEnum),
         nullable=False,
     )
 
-    land_area = Column(
-        Numeric(10, 2),
+    severity = Column(
+        Enum(AdvisorySeverityEnum),
         nullable=False,
     )
 
-    land_unit = Column(
-        Enum(LandUnitEnum),
+    title = Column(
+        String(150),
+        nullable=False,
+    )
+
+    message = Column(
+        Text,
+        nullable=False,
+    )
+
+    # ------------------------------------------------------------------------
+    # Read Status
+    # ------------------------------------------------------------------------
+
+    is_read = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    read_at = Column(
+        DateTime(timezone=True),
         nullable=True,
-    )
-
-    soil_type = Column(
-        Enum(SoilTypeEnum),
-        nullable=False,
-    )
-
-    # ------------------------------------------------------------------------
-    # GPS Location
-    # ------------------------------------------------------------------------
-
-    latitude = Column(
-        Float,
-        nullable=False,
-    )
-
-    longitude = Column(
-        Float,
-        nullable=False,
     )
 
     # ------------------------------------------------------------------------
@@ -136,23 +160,7 @@ class Farm(Base):
     # Relationships
     # ------------------------------------------------------------------------
 
-    farmer_profile = relationship(
-        "FarmerProfile",
-        back_populates="farms",
-    )
-
-    # ------------------------------------------------------------------------
-    # Weather Relationships
-    # ------------------------------------------------------------------------
-
-    weather_cache = relationship(
-        "WeatherCache",
-        back_populates="farm",
-        cascade="all, delete-orphan",
-    )
-
-    weather_advisories = relationship(
-        "WeatherAdvisory",
-        back_populates="farm",
-        cascade="all, delete-orphan",
+    farm = relationship(
+        "Farm",
+        back_populates="weather_advisories",
     )

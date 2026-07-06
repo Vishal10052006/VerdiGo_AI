@@ -11,3 +11,7 @@ from .user import User
 from .otp import OTP
 from .farmer_profile import FarmerProfile
 from .farm import Farm
+
+from .weather_cache import WeatherCache
+from .weather_advisory import WeatherAdvisory
+from .weather_provider_request_log import WeatherProviderRequestLog

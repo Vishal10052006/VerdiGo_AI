@@ -1,15 +1,16 @@
 """
-Farm Model
+Weather Provider Request Log Model
 
-This module defines the Farm database model.
+Stores every external weather provider request.
 
 Responsibilities:
-- Store farm information.
-- Link farms to a farmer profile.
-- Store land details and GPS coordinates.
+- Monitor API usage
+- Measure response time
+- Track fallback usage
+- Store provider metadata
 
 Module:
-Phase 1 → Module 2 → Farmer Registration
+Phase 1 → Module 5 → Weather Intelligence
 
 Author: VerdiGO Backend Team
 """
@@ -21,41 +22,55 @@ Author: VerdiGO Backend Team
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Enum,
-    Float,
-    ForeignKey,
-    Numeric,
+    Integer,
     String,
+    Index,
 )
 
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.database.base import Base
-from app.enums.land_unit import LandUnitEnum
-from app.enums.soil_type import SoilTypeEnum
+from app.enums.weather_provider import WeatherProviderEnum
 
 
 # ============================================================================
-# Farm Model
+# Weather Provider Request Log Model
 # ============================================================================
 
-class Farm(Base):
+class WeatherProviderRequestLog(Base):
     """
-    Represents a farm owned by a farmer.
-
-    Relationships:
-        FarmerProfile (1) --------> Farm (Many)
+    Logs external weather provider requests.
     """
 
     # ------------------------------------------------------------------------
     # Table Configuration
     # ------------------------------------------------------------------------
 
-    __tablename__ = "farms"
+    __tablename__ = "weather_provider_request_logs"
+
+    __table_args__ = (
+
+        Index(
+            "idx_provider_name",
+            "provider_name",
+        ),
+
+        Index(
+            "idx_provider_fetched",
+            "fetched_at",
+        ),
+
+        Index(
+            "idx_provider_status",
+            "status_code",
+        ),
+
+    )
 
     # ------------------------------------------------------------------------
     # Primary Key
@@ -68,91 +83,60 @@ class Farm(Base):
     )
 
     # ------------------------------------------------------------------------
-    # Foreign Key
+    # Provider Information
     # ------------------------------------------------------------------------
 
-    farmer_profile_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("farmer_profiles.id", ondelete="CASCADE"),
+    provider_name = Column(
+        Enum(WeatherProviderEnum),
         nullable=False,
     )
 
-    # ------------------------------------------------------------------------
-    # Farm Information
-    # ------------------------------------------------------------------------
-
-    farm_name = Column(
-        String(100),
-        nullable=False,
-    )
-
-    land_area = Column(
-        Numeric(10, 2),
-        nullable=False,
-    )
-
-    land_unit = Column(
-        Enum(LandUnitEnum),
+    provider_version = Column(
+        String(30),
         nullable=True,
     )
 
-    soil_type = Column(
-        Enum(SoilTypeEnum),
+    # ------------------------------------------------------------------------
+    # Request Metrics
+    # ------------------------------------------------------------------------
+
+    response_time_ms = Column(
+        Integer,
+        nullable=False,
+    )
+
+    status_code = Column(
+        Integer,
+        nullable=False,
+    )
+
+    fallback_used = Column(
+        Boolean,
+        default=False,
         nullable=False,
     )
 
     # ------------------------------------------------------------------------
-    # GPS Location
+    # Error Information
     # ------------------------------------------------------------------------
 
-    latitude = Column(
-        Float,
-        nullable=False,
-    )
-
-    longitude = Column(
-        Float,
-        nullable=False,
+    error_message = Column(
+        String(500),
+        nullable=True,
     )
 
     # ------------------------------------------------------------------------
     # Audit Fields
     # ------------------------------------------------------------------------
 
+    fetched_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
-    )
-
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-
-    # ------------------------------------------------------------------------
-    # Relationships
-    # ------------------------------------------------------------------------
-
-    farmer_profile = relationship(
-        "FarmerProfile",
-        back_populates="farms",
-    )
-
-    # ------------------------------------------------------------------------
-    # Weather Relationships
-    # ------------------------------------------------------------------------
-
-    weather_cache = relationship(
-        "WeatherCache",
-        back_populates="farm",
-        cascade="all, delete-orphan",
-    )
-
-    weather_advisories = relationship(
-        "WeatherAdvisory",
-        back_populates="farm",
-        cascade="all, delete-orphan",
     )
