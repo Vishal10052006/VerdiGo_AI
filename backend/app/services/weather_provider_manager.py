@@ -90,10 +90,13 @@ class WeatherProviderManager:
 
         try:
 
-            return provider.get_current_weather(
-                latitude,
-                longitude,
-            )
+            return {
+                "provider": primary,
+                "data": provider.get_current_weather(
+                    latitude,
+                    longitude,
+                ),
+            }
 
         except httpx.HTTPStatusError as exc:
 
@@ -104,10 +107,13 @@ class WeatherProviderManager:
 
                 fallback_provider = self._get_provider(fallback)
 
-                return fallback_provider.get_current_weather(
-                    latitude,
-                    longitude,
-                )
+                return {
+                    "provider": fallback,
+                    "data": fallback_provider.get_current_weather(
+                        latitude,
+                        longitude,
+                    ),
+                }
 
             # Authentication/configuration errors should surface
             raise
@@ -120,10 +126,13 @@ class WeatherProviderManager:
             # Retry using fallback provider
             fallback_provider = self._get_provider(fallback)
 
-            return fallback_provider.get_current_weather(
-                latitude,
-                longitude,
-            )
+            return {
+                "provider": fallback,
+                "data": fallback_provider.get_current_weather(
+                    latitude,
+                    longitude,
+                ),
+            }
 
     # ------------------------------------------------------------------------
     # Forecast Weather
@@ -146,11 +155,14 @@ class WeatherProviderManager:
 
         try:
 
-            return provider.get_forecast(
-                latitude,
-                longitude,
-                days,
-            )
+            return {
+                "provider": primary,
+                "data": provider.get_forecast(
+                    latitude,
+                    longitude,
+                    days,
+                ),
+            }
 
         except httpx.HTTPStatusError as exc:
 
@@ -161,11 +173,14 @@ class WeatherProviderManager:
 
                 fallback_provider = self._get_provider(fallback)
 
-                return fallback_provider.get_forecast(
-                    latitude,
-                    longitude,
-                    days,
-                )
+                return {
+                    "provider": fallback,
+                    "data": fallback_provider.get_forecast(
+                        latitude,
+                        longitude,
+                        days,
+                    ),
+                }
 
             raise
 
@@ -177,11 +192,14 @@ class WeatherProviderManager:
             # Retry using fallback provider
             fallback_provider = self._get_provider(fallback)
 
-            return fallback_provider.get_forecast(
-                latitude,
-                longitude,
-                days,
-            )
+            return {
+                "provider": fallback,
+                "data": fallback_provider.get_forecast(
+                    latitude,
+                    longitude,
+                    days,
+                ),
+            }
 
     # ------------------------------------------------------------------------
     # Health Check
