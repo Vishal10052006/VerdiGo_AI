@@ -98,7 +98,7 @@ class AdvisoryEngineService:
 
                 "type": AdvisoryTypeEnum.DISEASE,
 
-                "severity": AdvisorySeverityEnum.MEDIUM,
+                "severity": AdvisorySeverityEnum.MODERATE,
 
                 "title": "Disease Risk",
 
@@ -118,7 +118,7 @@ class AdvisoryEngineService:
 
                 "type": AdvisoryTypeEnum.WIND,
 
-                "severity": AdvisorySeverityEnum.MEDIUM,
+                "severity": AdvisorySeverityEnum.MODERATE,
 
                 "title": "Strong Wind",
 

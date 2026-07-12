@@ -69,7 +69,7 @@ class WeatherNormalizer:
 
             "condition": current["condition"]["text"],
 
-            "observed_at": current["last_updated"],
+            "fetched_at": current["last_updated"],
         }
 
     # ------------------------------------------------------------------------
@@ -116,5 +116,102 @@ class WeatherNormalizer:
                 "Unknown",
             ),
 
-            "observed_at": current.get("time"),
+            "fetched_at": current.get("time"),
+        }
+    
+
+    # ------------------------------------------------------------------------
+    # Normalize WeatherAPI Forecast
+    # ------------------------------------------------------------------------
+
+    @staticmethod
+    def normalize_weatherapi_forecast(
+        data: dict,
+    ) -> dict:
+        """
+        Normalize WeatherAPI forecast response into
+        VerdiGO's unified forecast format.
+        """
+
+        forecast_days = []
+
+        for day in data["forecast"]["forecastday"]:
+
+            forecast_days.append({
+
+                "date": day["date"],
+
+                "min_temperature": day["day"]["mintemp_c"],
+
+                "max_temperature": day["day"]["maxtemp_c"],
+
+                "rainfall": day["day"]["totalprecip_mm"],
+
+                "humidity": day["day"]["avghumidity"],
+
+                "wind_speed": day["day"]["maxwind_kph"],
+
+                "condition": day["day"]["condition"]["text"],
+
+            })
+
+        return {
+
+            "provider": "weatherapi",
+
+            "generated_at": data["location"]["localtime"],
+
+            "forecast": forecast_days,
+
+        }
+    
+
+    # ------------------------------------------------------------------------
+    # Normalize Open-Meteo Forecast
+    # ------------------------------------------------------------------------
+
+    @staticmethod
+    def normalize_openmeteo_forecast(
+        data: dict,
+    ) -> dict:
+        """
+        Normalize Open-Meteo forecast response into
+        VerdiGO's unified forecast format.
+        """
+
+        daily = data["daily"]
+
+        forecast_days = []
+
+        for index, forecast_date in enumerate(daily["time"]):
+
+            forecast_days.append({
+
+                "date": forecast_date,
+
+                "min_temperature": daily["temperature_2m_min"][index],
+
+                "max_temperature": daily["temperature_2m_max"][index],
+
+                "rainfall": daily["precipitation_sum"][index],
+
+                "humidity": daily["relative_humidity_2m_mean"][index],
+
+                "wind_speed": daily["wind_speed_10m_max"][index],
+
+                "condition": OPEN_METEO_WEATHER_CODES.get(
+                    daily["weather_code"][index],
+                    "Unknown",
+                ),
+
+            })
+
+        return {
+
+            "provider": "openmeteo",
+
+            "generated_at": daily["time"][0],
+
+            "forecast": forecast_days,
+
         }

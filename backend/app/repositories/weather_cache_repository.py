@@ -139,7 +139,7 @@ class WeatherCacheRepository:
         deleted = (
             self.db.query(WeatherCache)
             .filter(
-                WeatherCache.expires_at <= datetime.utcnow(),
+                WeatherCache.expires_at <= datetime.now(timezone.utc)
             )
             .delete()
         )
@@ -147,3 +147,25 @@ class WeatherCacheRepository:
         self.db.commit()
 
         return deleted
+    
+    # ------------------------------------------------------------------------
+    # Get Cache (Ignore Expiry)
+    # ------------------------------------------------------------------------
+
+    def get_cache(
+        self,
+        farm_id: UUID,
+        weather_type: WeatherTypeEnum,
+    ) -> WeatherCache | None:
+        """
+        Return cache regardless of expiration.
+        """
+
+        return (
+            self.db.query(WeatherCache)
+            .filter(
+                WeatherCache.farm_id == farm_id,
+                WeatherCache.weather_type == weather_type,
+            )
+            .first()
+        )

@@ -20,12 +20,10 @@ from app.core.middleware import AuthenticationMiddleware
 
 from app.routes.auth import router as auth_router
 from app.routes.farmer import router as farmer_router
-
 from app.routes.farm import router as farm_router
-
 from app.routes.profile import router as profile_router
-
 from app.routes.dashboard import router as dashboard_router
+from app.routes.weather import router as weather_router
 
 
 # =====================================================
@@ -34,7 +32,11 @@ from app.routes.dashboard import router as dashboard_router
 app = FastAPI(
     title="VerdiGO AI API",
     description="AI Powered Farmer Companion",
-    version="1.0.0"
+    version="1.0.0",
+    contact={
+        "name": "VerdiGO Team",
+        "email": "verdigoai@gmail.com",
+    },
 )
 
 
@@ -54,6 +56,8 @@ app.include_router(farmer_router)
 app.include_router(farm_router)
 app.include_router(profile_router)
 app.include_router(dashboard_router)
+app.include_router(weather_router)
+app.include_router(auth_router, prefix="/api/v1")
 
 
 # =====================================================

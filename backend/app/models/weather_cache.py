@@ -41,6 +41,8 @@ from app.database.base import Base
 from app.enums.weather_provider import WeatherProviderEnum
 from app.enums.weather_type import WeatherTypeEnum
 
+from sqlalchemy import UniqueConstraint
+
 
 # ============================================================================
 # Weather Cache Model
@@ -59,25 +61,21 @@ class WeatherCache(Base):
 
     __table_args__ = (
 
-        # Lookup weather by farm
         Index(
             "idx_weather_cache_farm",
             "farm_id",
         ),
 
-        # Lookup by expiry
         Index(
             "idx_weather_cache_expiry",
             "expires_at",
         ),
 
-        # Farm + Weather Type
-        Index(
-            "idx_weather_cache_farm_type",
+        UniqueConstraint(
             "farm_id",
             "weather_type",
+            name="uq_weather_cache_farm_type",
         ),
-
     )
 
     # ------------------------------------------------------------------------

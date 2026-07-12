@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 from app.models.weather_provider_request_log import (
     WeatherProviderRequestLog,
 )
+from app.enums.weather_provider import WeatherProviderEnum
 
 
 # ============================================================================
@@ -134,3 +135,45 @@ class WeatherProviderLogRepository:
         self.db.commit()
 
         return deleted
+
+
+    # ------------------------------------------------------------------------
+    # Get Latest Request
+    # ------------------------------------------------------------------------
+
+    def get_latest_request(
+        self,
+    ) -> WeatherProviderRequestLog | None:
+        """
+        Retrieve the latest provider request.
+        """
+
+        return (
+            self.db.query(WeatherProviderRequestLog)
+            .order_by(
+                WeatherProviderRequestLog.created_at.desc()
+            )
+            .first()
+        )
+
+
+    # ------------------------------------------------------------------------
+    # Count Provider Failures
+    # ------------------------------------------------------------------------
+
+    def count_failures(
+        self,
+        provider_name: WeatherProviderEnum,
+    ) -> int:
+        """
+        Count failed requests for a provider.
+        """
+
+        return (
+            self.db.query(WeatherProviderRequestLog)
+            .filter(
+                WeatherProviderRequestLog.provider_name == provider_name,
+                WeatherProviderRequestLog.status_code >= 400,
+            )
+            .count()
+        )

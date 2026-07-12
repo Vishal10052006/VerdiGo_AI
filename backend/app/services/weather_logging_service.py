@@ -1,14 +1,13 @@
 """
 Weather Logging Service
 
-Stores weather provider request logs for monitoring
-and observability.
+Provides business logic for weather provider request logging.
 
 Responsibilities:
 - Log provider requests
-- Log provider failures
-- Track response time
-- Track fallback usage
+- Retrieve provider logs
+- Count provider requests
+- Cleanup old logs
 
 Module:
 Phase 1 → Module 5 → Weather Intelligence
@@ -25,10 +24,7 @@ from sqlalchemy.orm import Session
 from app.models.weather_provider_request_log import (
     WeatherProviderRequestLog,
 )
-
-from app.enums.weather_provider import (
-    WeatherProviderEnum,
-)
+from app.enums.weather_provider import WeatherProviderEnum
 
 from app.repositories.weather_provider_log_repository import (
     WeatherProviderLogRepository,
@@ -41,7 +37,7 @@ from app.repositories.weather_provider_log_repository import (
 
 class WeatherLoggingService:
     """
-    Handles weather provider request logging.
+    Business logic for provider request logging.
     """
 
     def __init__(
@@ -49,73 +45,93 @@ class WeatherLoggingService:
         db: Session,
     ):
         """
-        Initialize repository.
+        Initialize logging service.
         """
 
         self.repository = WeatherProviderLogRepository(db)
 
     # ------------------------------------------------------------------------
-    # Log Request
+    # Save Log
     # ------------------------------------------------------------------------
 
-    def log_request(
+    def save_log(
         self,
-        provider: WeatherProviderEnum,
-        status_code: int,
-        response_time_ms: int,
-        fallback_used: bool = False,
+        log: WeatherProviderRequestLog,
     ) -> WeatherProviderRequestLog:
         """
-        Store a weather provider request log.
+        Store provider request log.
         """
-
-        log = WeatherProviderRequestLog(
-            provider_name=provider,
-            status_code=status_code,
-            response_time_ms=response_time_ms,
-            fallback_used=fallback_used,
-        )
 
         return self.repository.create_log(log)
 
     # ------------------------------------------------------------------------
-    # Log Success
+    # Recent Logs
     # ------------------------------------------------------------------------
 
-    def log_success(
+    def get_recent_logs(
         self,
-        provider: WeatherProviderEnum,
-        response_time_ms: int,
-    ) -> WeatherProviderRequestLog:
+        limit: int = 100,
+    ) -> list[WeatherProviderRequestLog]:
         """
-        Log successful provider request.
+        Retrieve recent provider logs.
         """
 
-        return self.log_request(
-            provider=provider,
-            status_code=200,
-            response_time_ms=response_time_ms,
-            fallback_used=False,
+        return self.repository.get_recent_logs(limit)
+
+    # ------------------------------------------------------------------------
+    # Latest Request
+    # ------------------------------------------------------------------------
+
+    def get_latest_request(
+        self,
+    ) -> WeatherProviderRequestLog | None:
+        """
+        Retrieve latest provider request.
+        """
+
+        return self.repository.get_latest_request()
+
+    # ------------------------------------------------------------------------
+    # Count Requests
+    # ------------------------------------------------------------------------
+
+    def count_requests(
+        self,
+    ) -> int:
+        """
+        Count total provider requests.
+        """
+
+        return self.repository.count_requests()
+
+    # ------------------------------------------------------------------------
+    # Count Failures
+    # ------------------------------------------------------------------------
+
+    def count_failures(
+        self,
+        provider_name: WeatherProviderEnum,
+    ) -> int:
+        """
+        Count failed provider requests.
+        """
+
+        return self.repository.count_failures(
+            provider_name,
         )
 
     # ------------------------------------------------------------------------
-    # Log Failure
+    # Cleanup Logs
     # ------------------------------------------------------------------------
 
-    def log_failure(
+    def cleanup_logs(
         self,
-        provider: WeatherProviderEnum,
-        status_code: int,
-        response_time_ms: int,
-        fallback_used: bool = False,
-    ) -> WeatherProviderRequestLog:
+        retention_days: int = 30,
+    ) -> int:
         """
-        Log failed provider request.
+        Delete old provider logs.
         """
 
-        return self.log_request(
-            provider=provider,
-            status_code=status_code,
-            response_time_ms=response_time_ms,
-            fallback_used=fallback_used,
+        return self.repository.delete_old_logs(
+            retention_days,
         )

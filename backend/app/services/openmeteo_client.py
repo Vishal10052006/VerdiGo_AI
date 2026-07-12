@@ -19,6 +19,7 @@ Author: VerdiGO Backend Team
 # ============================================================================
 
 import httpx
+from uuid import UUID
 
 from app.config.settings import settings
 
@@ -46,6 +47,7 @@ class OpenMeteoClient:
 
     def get_current_weather(
         self,
+        farm_id: UUID,
         latitude: float,
         longitude: float,
     ) -> dict:
@@ -83,9 +85,10 @@ class OpenMeteoClient:
 
     def get_forecast(
         self,
+        farm_id: UUID,
         latitude: float,
         longitude: float,
-        days: int = 3,
+        days: int = 5,
     ) -> dict:
         """
         Fetch weather forecast.

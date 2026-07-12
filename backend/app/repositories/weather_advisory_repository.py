@@ -25,6 +25,8 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.weather_advisory import WeatherAdvisory
+from app.enums.advisory_severity import AdvisorySeverityEnum
+from app.enums.advisory_type import AdvisoryTypeEnum
 
 
 # ============================================================================
@@ -186,4 +188,69 @@ class WeatherAdvisoryRepository:
                 WeatherAdvisory.created_at.desc()
             )
             .first()
+        )
+    
+    # ------------------------------------------------------------------------
+    # Get Farm Advisories
+    # ------------------------------------------------------------------------
+
+    def get_farm_advisories(
+        self,
+        farm_id: UUID,
+        skip: int = 0,
+        limit: int = 20,
+        severity: AdvisorySeverityEnum | None = None,
+        advisory_type: AdvisoryTypeEnum | None = None,
+        sort_order: str = "desc",
+    ):
+        """
+        Return advisory history for a farm.
+        """
+
+        query = (
+            self.db.query(WeatherAdvisory)
+            .filter(
+                WeatherAdvisory.farm_id == farm_id,
+            )
+        )
+
+        # ------------------------------------------------------------
+        # Filter by Severity
+        # ------------------------------------------------------------
+
+        if severity:
+            query = query.filter(
+                WeatherAdvisory.severity == severity,
+            )
+
+        # ------------------------------------------------------------
+        # Filter by Advisory Type
+        # ------------------------------------------------------------
+
+        if advisory_type:
+            query = query.filter(
+                WeatherAdvisory.advisory_type == advisory_type,
+            )
+
+        # ------------------------------------------------------------
+        # Sorting
+        # ------------------------------------------------------------
+
+        if sort_order.lower() == "asc":
+            query = query.order_by(
+                WeatherAdvisory.created_at.asc(),
+            )
+        else:
+            query = query.order_by(
+                WeatherAdvisory.created_at.desc(),
+            )
+
+        # ------------------------------------------------------------
+        # Pagination
+        # ------------------------------------------------------------
+
+        return (
+            query.offset(skip)
+            .limit(limit)
+            .all()
         )

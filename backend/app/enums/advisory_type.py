@@ -26,15 +26,11 @@ class AdvisoryTypeEnum(str, Enum):
     """
 
     RAIN = "rain"
-
     IRRIGATION = "irrigation"
-
     HEAT = "heat"
-
     FROST = "frost"
-
     WIND = "wind"
-
     HUMIDITY = "humidity"
-
+    DISEASE = "disease"
     WEATHER_SUMMARY = "weather_summary"
+    TEMPERATURE = "temperature"
