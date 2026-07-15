@@ -6,9 +6,9 @@ class Settings(BaseSettings):
     # =========================
     # Application
     # =========================
-    APP_NAME: str
-    APP_ENV: str
-    DEBUG: bool
+    APP_NAME: str = "VerdiGO AI"
+    APP_ENV: str = "development"
+    DEBUG: bool = True
 
     # =========================
     # Database
