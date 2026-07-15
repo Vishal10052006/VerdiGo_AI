@@ -27,3 +27,7 @@ __pycache__/
 # Uploaded user files
 backend/uploads/profile/*
 !backend/uploads/profile/.gitkeep
+
+# Root Node.js
+node_modules/
+package-lock.json

@@ -29,6 +29,7 @@ from app.schemas.dashboard import (
     DashboardStatisticsSchema,
     FarmerInfoSchema,
     FarmInfoSchema,
+    PrimaryFarmSchema,
 )
 
 
@@ -44,7 +45,13 @@ def get_dashboard_summary(
     Retrieve dashboard summary for the authenticated user.
     """
 
+    print("=" * 60)
+    print("Dashboard Service User ID:", user_id)
+
     farmer_profile = get_dashboard_data(db, user_id)
+
+    print("Dashboard Repository Result:", farmer_profile)
+    print("=" * 60)
 
     if farmer_profile is None:
         return None
@@ -54,12 +61,24 @@ def get_dashboard_summary(
     # ============================================================================
 
     farms = []
+    primary_farm = None
 
     if farmer_profile.farms:
+
         farms = [
             FarmInfoSchema.model_validate(farm)
             for farm in farmer_profile.farms
         ]
+
+        first_farm = farmer_profile.farms[0]
+
+        primary_farm = PrimaryFarmSchema(
+            id=first_farm.id,
+            farm_name=first_farm.farm_name,
+            village=farmer_profile.village,
+            district=farmer_profile.district,
+            state=farmer_profile.state,
+            )
 
     registered_days = (
         datetime.now(farmer_profile.created_at.tzinfo)
@@ -98,6 +117,7 @@ def get_dashboard_summary(
 
     return DashboardDataSchema(
         farmer=farmer,
+        primary_farm=primary_farm,
         farms=farms,
         statistics=statistics,
     )

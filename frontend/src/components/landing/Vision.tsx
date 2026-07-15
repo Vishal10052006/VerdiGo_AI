@@ -8,7 +8,7 @@ export default function Vision() {
       id="about"
       className="bg-white py-24"
     >
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto w-full max-w-7xl px-6 py-8">
 
         {/* Heading */}
 

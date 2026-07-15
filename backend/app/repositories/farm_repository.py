@@ -102,3 +102,22 @@ def update(
     db.refresh(farm)
 
     return farm
+
+
+# ============================================================================
+# Get All Farms By Farmer Profile ID
+# ============================================================================
+
+def get_all_by_farmer_profile_id(
+    db: Session,
+    farmer_profile_id: UUID,
+) -> list[Farm]:
+    """
+    Retrieve all farms belonging to a farmer profile.
+    """
+
+    return (
+        db.query(Farm)
+        .filter(Farm.farmer_profile_id == farmer_profile_id)
+        .all()
+    )

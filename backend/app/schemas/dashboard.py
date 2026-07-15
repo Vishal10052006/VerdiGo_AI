@@ -70,6 +70,30 @@ class FarmInfoSchema(BaseModel):
 
 
 # ============================================================================
+# Primary Farm Schema
+# ============================================================================
+
+class PrimaryFarmSchema(BaseModel):
+    """
+    Primary farm displayed on the dashboard.
+    """
+
+    id: UUID
+
+    farm_name: str
+
+    village: str
+
+    district: str
+
+    state: str
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+
+# ============================================================================
 # Dashboard Statistics Schema
 # ============================================================================
 
@@ -113,7 +137,11 @@ class DashboardDataSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     farmer: FarmerInfoSchema
+
+    primary_farm: PrimaryFarmSchema | None = None
+
     farms: list[FarmInfoSchema]
+
     statistics: DashboardStatisticsSchema
 
     # ============================================================================

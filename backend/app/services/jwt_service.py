@@ -41,15 +41,23 @@ def create_refresh_token(user_id: str) -> str:
     )
 
 
+from jose import JWTError
+
 def decode_token(token: str) -> dict | None:
     try:
-        return jwt.decode(
+        payload = jwt.decode(
             token,
             settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
+            algorithms=[settings.JWT_ALGORITHM],
         )
-    except JWTError:
+
+        print("✅ JWT decoded:", payload)
+        return payload
+
+    except JWTError as e:
+        print("❌ JWT ERROR:", repr(e))
         return None
+    
     
 def verify_token(
     token: str,

@@ -55,10 +55,17 @@ def verify_access_token(
     )
 ) -> dict:
 
+    print("=" * 60)
+    print("Authorization Scheme:", credentials.scheme)
+    print("Received Token:", credentials.credentials)
+    print("=" * 60)
+
     payload = verify_token(
         token=credentials.credentials,
         token_type="access"
     )
+
+    print("Decoded Payload:", payload)
 
     if payload is None:
         raise UnauthorizedException()

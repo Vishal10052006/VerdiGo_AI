@@ -52,7 +52,7 @@ export default function HowItWorks() {
         id="how-it-works"
         className="bg-emerald-50 py-24"
     >
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto w-full max-w-7xl px-6 py-8">
         {/* Header */}
         <div className="mx-auto mb-20 max-w-3xl text-center">
           <span className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-700">

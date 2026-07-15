@@ -151,7 +151,7 @@ def login(
 # =====================================================
 @router.post(
     "/logout",
-    response_model=SuccessResponse,
+    response_model=SuccessResponse[dict],
 )
 def logout():
     return logout_user()

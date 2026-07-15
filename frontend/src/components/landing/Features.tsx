@@ -50,7 +50,7 @@ export default function Features() {
         className="bg-white py-20"
     >
 
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto w-full max-w-7xl px-6 py-8">
 
         {/* Section Header */}
 

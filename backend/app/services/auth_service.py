@@ -160,6 +160,11 @@ def verify_otp(
         db=db,
         mobile=mobile
     )
+    print("=" * 60)
+    print("VERIFY OTP")
+    print("Mobile :", mobile)
+    print("User ID:", user.id)
+    print("=" * 60)
 
     access_token = jwt_service.create_access_token(
         str(user.id)
@@ -204,5 +209,6 @@ def refresh_access_token(
 def logout_user() -> dict:
     return {
         "success": True,
-        "message": "Logged out successfully"
+        "message": "Logged out successfully",
+        "data": {}
     }

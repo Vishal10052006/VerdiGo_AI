@@ -13,7 +13,7 @@ import {
 export default function Dashboard() {
   return (
     <section className="bg-slate-50 py-16">
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="rounded-3xl border bg-white p-10 shadow-sm">
 
         {/* Header */}
         <div className="mb-10">
