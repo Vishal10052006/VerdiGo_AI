@@ -29,6 +29,7 @@ from pydantic import (
 
 from app.enums.land_unit import LandUnitEnum
 from app.enums.soil_type import SoilTypeEnum
+from app.schemas.weather import CurrentWeatherSchema
 
 
 # ============================================================================
@@ -148,7 +149,7 @@ class DashboardDataSchema(BaseModel):
     # Future Modules (Placeholders)
     # ============================================================================
 
-    weather: dict[str, Any] | None = None
+    weather: CurrentWeatherSchema | None = None
 
     recommendations: list[Any] = Field(default_factory=list)
 

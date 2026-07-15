@@ -31,6 +31,10 @@ from app.schemas.dashboard import (
     FarmInfoSchema,
     PrimaryFarmSchema,
 )
+from app.services.weather_service import WeatherService
+from app.schemas.weather import (
+    CurrentWeatherSchema,
+)
 
 
 # ============================================================================
@@ -78,7 +82,23 @@ def get_dashboard_summary(
             village=farmer_profile.village,
             district=farmer_profile.district,
             state=farmer_profile.state,
-            )
+        )
+
+    weather = None
+
+    if primary_farm:
+
+        weather_service = WeatherService(db)
+
+        weather_data = weather_service.get_current_weather(
+            farm_id=first_farm.id,
+            latitude=first_farm.latitude,
+            longitude=first_farm.longitude,
+        )
+
+        weather = CurrentWeatherSchema.model_validate(
+            weather_data
+        )
 
     registered_days = (
         datetime.now(farmer_profile.created_at.tzinfo)
@@ -120,4 +140,5 @@ def get_dashboard_summary(
         primary_farm=primary_farm,
         farms=farms,
         statistics=statistics,
+        weather=weather,
     )

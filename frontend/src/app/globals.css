@@ -2,7 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* stylelint-disable at-rule-no-unknown */
 @custom-variant dark (&:is(.dark *));
+/* stylelint-enable at-rule-no-unknown */
 
 @theme inline {
   --color-background: var(--background);
@@ -121,10 +123,13 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
   }
 }
