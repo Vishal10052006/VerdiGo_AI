@@ -1,219 +1,76 @@
-# 🌱 VerdiGo AI
+# 🌱 VerdiGO AI
 
-> AI-powered Smart Agriculture Platform for Indian Farmers
+**Building the digital backbone for Indian farmers.**
 
-VerdiGo AI is an intelligent agriculture platform designed to help farmers make data-driven decisions through AI, weather intelligence, farm management, and future crop recommendation systems.
-
-This project is being built as a complete production-ready SaaS platform using modern web technologies.
+VerdiGO AI is an agri-tech platform designed to give every farmer access to reliable information, personalized guidance, and — eventually — a 24/7 AI agronomist in their own language. This repo contains the backend and frontend for the core platform.
 
 ---
 
-## 🚀 Features
+## 🚀 Vision
 
-### ✅ Authentication
-- Secure JWT Authentication
-- Farmer Registration
-- Login & Logout
-- Protected Routes
+> A farmer opens VerdiGO and simply says: *"What should I do today?"*
+> VerdiGO understands their farm, their crop, their weather, and their history — and responds like a trusted agricultural officer, in their own language.
 
-### 🌾 Farm Management
-- Register Farms
-- Manage Farm Details
-- Farm Dashboard
-- Soil Information
-- Farm Area Tracking
-
-### 📊 Smart Dashboard
-- Personalized Welcome Section
-- Animated Statistics
-- Live Weather Widget
-- Farm Summary Card
-- Quick Actions
-- Recent Activity Timeline
-- Skeleton Loading States
-- Responsive Design
-
-### 🌦 Weather Intelligence
-- Live Weather API Integration
-- Temperature
-- Humidity
-- Wind Speed
-- Rainfall
-- Weather Condition
-
-### 🤖 Upcoming AI Modules
-- Crop Recommendation
-- Disease Detection
-- Fertilizer Recommendation
-- AI Chat Assistant
-- Yield Prediction
-- Farm Analytics
+VerdiGO AI's long-term goal is to become a **24×7 AI Agronomist**: a voice and chat assistant that interacts with farmers in their local language, asks intelligent follow-up questions, and analyzes crop images, weather, soil, and farming history to diagnose the real root cause of a problem — then delivers personalized, expert-level recommendations.
 
 ---
 
-# 🛠 Tech Stack
+## ✅ What's Built (Phase 1 — Foundation MVP)
 
-## Frontend
+| Module | Status | Details |
+|---|---|---|
+| **Authentication** | ✅ Live | OTP-based login, JWT access/refresh tokens, logout, session refresh |
+| **Farmer Registration** | ✅ Live | Farmer profile & farm information models, full CRUD APIs |
+| **Farmer Profile** | ✅ Live | Get/update profile, profile image upload |
+| **Dashboard** | ✅ Live | Aggregated farm + weather summary APIs |
+| **Weather Advisory** | ✅ Live | Multi-provider weather intelligence (OpenMeteo + WeatherAPI) with automatic fallback, caching, and response normalization |
+| **Crop Recommendation** | 🔜 In Progress | AI-driven recommendation engine |
+| **AI Chat (Text)** | 🔜 In Progress | Conversational farming assistant |
+| **Disease Detection (Image)** | 🔜 In Progress | Computer vision-based crop disease identification |
 
-- Next.js 16
-- React
-- TypeScript
-- Tailwind CSS v4
-- ShadCN UI
-- Lucide Icons
-
-## Backend
-
-- FastAPI
-- SQLAlchemy
-- PostgreSQL
-- Alembic
-- Pydantic
-- JWT Authentication
+**Success criteria for Phase 1:** *A farmer can register and get basic advice.*
 
 ---
 
-# 📂 Project Structure
+## 🗺️ Roadmap — 8 Phases to a Mature Platform
 
-```
-VerdiGo_AI
-│
-├── backend
-│   ├── app
-│   ├── alembic
-│   ├── uploads
-│   └── requirements.txt
-│
-├── frontend
-│   ├── src
-│   ├── public
-│   ├── package.json
-│   └── next.config.ts
-│
-└── README.md
-```
+| Phase | Focus | Goal | Est. Duration |
+|---|---|---|---|
+| **1 — Foundation MVP** | Auth, Farmer Registration/Profile, Dashboard, Weather, Crop Recommendation, AI Chat, Disease Detection | Build the first usable product | 1–2 months |
+| **2 — Voice Companion** | Hindi Speech-to-Text/Text-to-Speech, Voice Chat, Voice Disease/Crop/Weather queries | Farmers talk instead of type | 1 month |
+| **3 — Smart Farming Advisor** | Fertilizer & Irrigation Recommendation, Pest Prediction, Crop Calendar, Task Reminders | Provide personalized, proactive recommendations | 2 months |
+| **4 — Visual AI Agronomist** | Advanced Disease/Pest Detection, Video Upload Analysis, Soil Image Analysis, Treatment Recommendation | AI understands images and videos | 2 months |
+| **5 — Memory & Personalization** | Farm/Crop/Soil/Disease History, Conversation Memory, Farmer Preferences | AI remembers each farmer | 1–2 months |
+| **6 — Real-Time AI Companion** | Live Voice Conversation, Multi-turn Memory, Regional Language Support (Haryanvi, Punjabi) | Human-like, context-aware conversations | 2–3 months |
+| **7 — Farm Business Platform** | Mandi Prices, Price Prediction, Marketplace, Government Schemes, Insurance Discovery | Increase farmer income | 3 months |
+| **8 — AI Operating System for Agriculture** | Live Camera Companion, Satellite Intelligence (NDVI, Crop Monitoring), Predictive Yield/Risk Modeling, Multi-stakeholder Platform (Farmers, FPOs, Experts, Government, Agri Companies), 9+ Indian languages | Become the primary agricultural assistant, nationwide | 6+ months |
+
+**Total estimated timeline:** ~18–24 months to a mature VerdiGO platform (2-person team pace).
 
 ---
 
-# ⚙️ Installation
+## 🏗️ Tech Stack
 
-## 1. Clone Repository
-
-```bash
-git clone https://github.com/Vishal10052006/VerdiGo_AI.git
-```
-
----
-
-## 2. Backend
-
-```bash
-cd backend
-
-python -m venv .venv
-
-source .venv/bin/activate
-```
-
-Install packages
-
-```bash
-pip install -r requirements.txt
-```
-
-Run server
-
-```bash
-uvicorn app.main:app --reload
-```
-
-Backend
-
-```
-http://127.0.0.1:8000
-```
+**Backend:** Python, FastAPI, SQLAlchemy, PostgreSQL, Alembic (migrations), JWT Authentication
+**Frontend:** Next.js, React, TypeScript, Tailwind CSS
+**Weather Integration:** OpenMeteo API, WeatherAPI (multi-provider fallback + caching)
+**Deployment:** Vercel, Railway, Render
+**Planned AI Stack:** TensorFlow / PyTorch (Disease Detection CV model), LLM integration (AI Farming Assistant), Speech-to-Text/Text-to-Speech (Hindi + regional languages)
 
 ---
 
-## 3. Frontend
+## 📌 Current Focus
 
-```bash
-cd frontend
-
-npm install
-
-npm run dev
-```
-
-Frontend
-
-```
-http://localhost:3000
-```
+Actively building out **Crop Recommendation**, **Disease Detection**, and the **AI Farming Assistant** — the remaining three modules of Phase 1 — before moving into Phase 2 (Voice Companion).
 
 ---
 
-# 🌐 Environment Variables
+## 🤝 Team
 
-Frontend
-
-```
-NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-```
-
-Backend
-
-Create a `.env` file.
-
-Example
-
-```
-DATABASE_URL=
-SECRET_KEY=
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-```
+Founded and built by [Vishal Raj](https://github.com/Vishal10052006). Actively looking to bring on a technical or product co-founder to accelerate the roadmap.
 
 ---
 
-# 📌 Current Development Status
+## 📄 License
 
-## ✅ Phase 1
-
-- Module 1 – Backend Foundation
-- Module 2 – Farmer Registration
-- Module 3 – Authentication
-- Module 4 – Landing Website
-- Module 5 – Dashboard Architecture
-- Module 6 – User Dashboard
-
----
-
-# 🚀 Future Roadmap
-
-- AI Crop Recommendation
-- Disease Detection
-- Fertilizer Recommendation
-- Satellite Integration
-- AI Chat Assistant
-- IoT Device Support
-- Mobile Application
-- Government Scheme Integration
-
----
-
-# 👨‍💻 Developer
-
-**Founder**
-
-**Vishal Singh**
-
-Building AI for Agriculture 🌱
-
----
-
-# 📄 License
-
-This project is currently under development.
-
-All Rights Reserved © VerdiGo AI
+TBD
