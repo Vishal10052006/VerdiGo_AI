@@ -45,7 +45,7 @@ VerdiGO AI's long-term goal is to become a **24×7 AI Agronomist**: a voice and 
 | **7 — Farm Business Platform** | Mandi Prices, Price Prediction, Marketplace, Government Schemes, Insurance Discovery | Increase farmer income | 3 months |
 | **8 — AI Operating System for Agriculture** | Live Camera Companion, Satellite Intelligence (NDVI, Crop Monitoring), Predictive Yield/Risk Modeling, Multi-stakeholder Platform (Farmers, FPOs, Experts, Government, Agri Companies), 9+ Indian languages | Become the primary agricultural assistant, nationwide | 6+ months |
 
-**Total estimated timeline:** ~18–24 months to a mature VerdiGO platform (2-person team pace).
+**Total estimated timeline:** ~18–24 months to a mature VerdiGO platform (solo).
 
 ---
 
