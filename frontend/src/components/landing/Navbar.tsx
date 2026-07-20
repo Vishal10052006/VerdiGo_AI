@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Leaf, Menu } from "lucide-react";
+import { Leaf, Link, Menu } from "lucide-react";
 
 export default function Navbar() {
   return (
@@ -66,9 +66,11 @@ export default function Navbar() {
         {/* Right */}
         <div className="flex items-center gap-4">
 
-          <Button className="hidden rounded-xl lg:flex">
-            Get Started
-          </Button>
+          <Link href="/login">
+            <Button className="hidden rounded-xl lg:flex">
+                Get Started
+            </Button>
+          </Link>
 
           <button className="lg:hidden">
             <Menu className="h-7 w-7" />

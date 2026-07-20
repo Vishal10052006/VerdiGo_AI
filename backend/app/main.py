@@ -16,8 +16,6 @@ from app.config.settings import settings
 
 import app.core.logging
 
-from app.core.middleware import AuthenticationMiddleware
-
 from app.routes.auth import router as auth_router
 from app.routes.farmer import router as farmer_router
 from app.routes.farm import router as farm_router
@@ -54,14 +52,6 @@ app.add_middleware(
 
 
 # =====================================================
-# Register Global Middleware
-# =====================================================
-# app.add_middleware(
-#    AuthenticationMiddleware
-# )
-
-
-# =====================================================
 # Register API Routers
 # =====================================================
 app.include_router(auth_router)
@@ -71,8 +61,6 @@ app.include_router(profile_router)
 app.include_router(dashboard_router)
 print("✅ Dashboard router registered")
 app.include_router(weather_router)
-app.include_router(auth_router, prefix="/api/v1")
-
 
 # =====================================================
 # Static Files

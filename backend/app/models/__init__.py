@@ -15,3 +15,6 @@ from .farm import Farm
 from .weather_cache import WeatherCache
 from .weather_advisory import WeatherAdvisory
 from .weather_provider_request_log import WeatherProviderRequestLog
+
+from .refresh_token import RefreshToken
+from .token_blacklist import TokenBlacklist

@@ -8,6 +8,8 @@ import {
   BarChart3,
 } from "lucide-react";
 
+import Link from "next/link";
+
 export default function Hero() {
   return (
     <section
@@ -49,13 +51,15 @@ export default function Hero() {
 
             <div className="mt-10 flex flex-wrap gap-4">
 
-              <Button
-                size="lg"
-                className="rounded-xl px-8"
-              >
-                Start Farming Smarter
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <Link href="/login">
+                <Button
+                  size="lg"
+                  className="rounded-xl px-8"
+                >
+                  Start Farming Smarter
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
 
               <Button
                 size="lg"

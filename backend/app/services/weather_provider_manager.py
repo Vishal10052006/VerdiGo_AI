@@ -224,7 +224,10 @@ class WeatherProviderManager:
                 fallback_start = time.perf_counter()
 
                 try:
-                    fallback_data = fallback_provider.get_current_weather(...)
+                    fallback_data = fallback_provider.get_current_weather(
+                        latitude,
+                        longitude,
+                    )
                 except Exception:
                     # Log fallback failure
                     raise
@@ -270,7 +273,10 @@ class WeatherProviderManager:
             fallback_start = time.perf_counter()
 
             try:
-                fallback_data = fallback_provider.get_current_weather(...)
+                fallback_data = fallback_provider.get_current_weather(
+                    latitude,
+                    longitude,
+                )
             except Exception:
                 # Log fallback failure
                 raise
