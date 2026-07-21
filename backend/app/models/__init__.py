@@ -18,3 +18,6 @@ from .weather_provider_request_log import WeatherProviderRequestLog
 
 from .refresh_token import RefreshToken
 from .token_blacklist import TokenBlacklist
+
+from .crop import Crop
+from .crop_recommendation import CropRecommendation, CropRecommendationItem
