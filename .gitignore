@@ -31,3 +31,6 @@ backend/uploads/profile/*
 # Root Node.js
 node_modules/
 package-lock.json
+
+# Local authentication files
+.auth_*

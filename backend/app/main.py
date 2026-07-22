@@ -24,6 +24,8 @@ from app.routes.dashboard import router as dashboard_router
 from app.routes.weather import router as weather_router
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routes.crop_recommendation import router as crop_recommendation_router
+
 
 # =====================================================
 # FastAPI Application
@@ -59,8 +61,9 @@ app.include_router(farmer_router)
 app.include_router(farm_router)
 app.include_router(profile_router)
 app.include_router(dashboard_router)
-print("✅ Dashboard router registered")
 app.include_router(weather_router)
+
+app.include_router(crop_recommendation_router)
 
 # =====================================================
 # Static Files

@@ -21,3 +21,6 @@ from .token_blacklist import TokenBlacklist
 
 from .crop import Crop
 from .crop_recommendation import CropRecommendation, CropRecommendationItem
+
+from .crop import Crop
+from .crop_recommendation import CropRecommendation, CropRecommendationItem

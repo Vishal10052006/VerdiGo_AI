@@ -23,6 +23,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.farm import Farm
+from app.models.farmer_profile import FarmerProfile
 
 
 # ============================================================================
@@ -78,6 +79,33 @@ def get_by_id(
     return (
         db.query(Farm)
         .filter(Farm.id == farm_id)
+        .first()
+    )
+
+
+# ============================================================================
+# Get Farm By ID, Scoped To Owner
+# ============================================================================
+
+def get_by_id_for_user(
+    db: Session,
+    farm_id: UUID,
+    user_id: UUID,
+) -> Farm | None:
+    """
+    Retrieve a farm by ID, but only if it belongs to the given
+    user's farmer profile. Returns None (→ 404, not 403) if the
+    farm exists but belongs to someone else — this avoids leaking
+    farm existence to unauthorized users.
+    """
+
+    return (
+        db.query(Farm)
+        .join(FarmerProfile, Farm.farmer_profile_id == FarmerProfile.id)
+        .filter(
+            Farm.id == farm_id,
+            FarmerProfile.user_id == user_id,
+        )
         .first()
     )
 
