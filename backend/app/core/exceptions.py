@@ -45,6 +45,11 @@ class UserNotFoundException(HTTPException):
         )
 
 
+class ServiceUnavailableException(HTTPException):
+    def __init__(self, message: str = "Service temporarily unavailable."):
+        super().__init__(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=message)
+
+
 # =====================================================
 # Authentication Exceptions
 # =====================================================

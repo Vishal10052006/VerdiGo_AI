@@ -24,3 +24,5 @@ from .crop_recommendation import CropRecommendation, CropRecommendationItem
 
 from .crop import Crop
 from .crop_recommendation import CropRecommendation, CropRecommendationItem
+
+from .chat import ChatConversation, ChatMessage

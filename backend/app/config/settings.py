@@ -38,18 +38,29 @@ class Settings(BaseSettings):
     # =========================
 
     WEATHERAPI_API_KEY: str
-
     WEATHERAPI_BASE_URL: str
-
     OPENMETEO_BASE_URL: str
-
     PRIMARY_WEATHER_PROVIDER: str
-
     FALLBACK_WEATHER_PROVIDER: str
-
     WEATHER_REQUEST_TIMEOUT: int
-
     WEATHER_CACHE_MINUTES: int
+
+
+    # Add to backend/app/config/settings.py
+
+    # =========================
+    # AI Chat Assistant
+    # =========================
+    GEMINI_API_KEY: str = ""
+    GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
+    AI_REQUEST_TIMEOUT: int = 15
+    AI_DAILY_MESSAGE_LIMIT: int = 100  # per-farmer rate limit — cost control
 
     # =========================
     # CORS
