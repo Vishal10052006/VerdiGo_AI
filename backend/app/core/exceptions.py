@@ -45,11 +45,6 @@ class UserNotFoundException(HTTPException):
         )
 
 
-class ServiceUnavailableException(HTTPException):
-    def __init__(self, message: str = "Service temporarily unavailable."):
-        super().__init__(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=message)
-
-
 # =====================================================
 # Authentication Exceptions
 # =====================================================
@@ -67,3 +62,13 @@ class OTPExpiredException(BadRequestException):
 class InvalidTokenException(UnauthorizedException):
     def __init__(self):
         super().__init__("Invalid or expired token.")
+
+
+class TooManyRequestsException(HTTPException):
+    def __init__(self, message: str = "Daily message limit reached."):
+        super().__init__(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=message)
+
+
+class ServiceUnavailableException(HTTPException):
+    def __init__(self, message: str = "Service temporarily unavailable."):
+        super().__init__(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=message)

@@ -24,6 +24,16 @@ from app.services.weather_service import WeatherService
 from app.services.season_service import SeasonService
 from app.core.exceptions import NotFoundException
 
+from app.core.exceptions import NotFoundException, ServiceUnavailableException
+from app.core.exceptions import (
+    NotFoundException,
+    ServiceUnavailableException,
+    TooManyRequestsException,
+)
+from app.repositories import chat_rate_limit_repository
+from app.config.settings import settings
+
+
 MAX_HISTORY_MESSAGES = 10  # sliding window — cost + context-length control
 
 
@@ -46,6 +56,24 @@ class ChatService:
             raise NotFoundException(message="Farmer profile not found.")
 
         farm = farm_repository.get_by_farmer_profile_id(self.db, farmer_profile.id)
+
+
+        # ------------------------------------------------------------
+        # Rate Limit Check (cost control — before any AI spend)
+        # ------------------------------------------------------------
+        current_count = chat_rate_limit_repository.increment_and_get_count(
+            db=self.db,
+            farmer_profile_id=farmer_profile.id,
+        )
+
+        if current_count > settings.AI_DAILY_MESSAGE_LIMIT:
+            raise TooManyRequestsException(
+                message=(
+                    f"You've reached today's limit of "
+                    f"{settings.AI_DAILY_MESSAGE_LIMIT} messages. "
+                    f"Please try again tomorrow."
+                )
+            )
 
         # ------------------------------------------------------------
         # Get or Create Conversation (scoped to this farmer only)

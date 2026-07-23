@@ -30,38 +30,8 @@ import pytest
 
 from app.database.database import SessionLocal
 from app.repositories import otp_repository
-from app.enums.chat import AIProviderEnum
 from app.services.ai import ai_provider_manager as ai_provider_manager_module
-
-
-# ============================================================================
-# Fixtures / Helpers
-# ============================================================================
-
-FAKE_AI_REPLY = "Based on your soil and season, irrigate every 5-7 days."
-
-
-@pytest.fixture(autouse=True)
-def mock_ai_provider(monkeypatch):
-    """
-    Replace AIProviderManager.generate_response with a stub so tests
-    never call real Gemini/OpenAI APIs. Autouse — applies to every
-    test in this file without needing to be requested explicitly.
-    """
-
-    def _fake_generate_response(self, system_prompt, history, user_message):
-        return {
-            "text": FAKE_AI_REPLY,
-            "tokens": 42,
-            "provider": AIProviderEnum.GEMINI,
-            "response_time_ms": 250,
-        }
-
-    monkeypatch.setattr(
-        ai_provider_manager_module.AIProviderManager,
-        "generate_response",
-        _fake_generate_response,
-    )
+from tests.conftest import FAKE_AI_REPLY
 
 
 def _create_farm_for_user(client, headers, farm_name="Test Farm"):

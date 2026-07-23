@@ -19,6 +19,8 @@ Author: VerdiGO Backend Team
 # ============================================================================
 
 import pytest
+from app.enums.chat import AIProviderEnum
+from app.services.ai import ai_provider_manager as ai_provider_manager_module
 
 from fastapi.testclient import TestClient
 
@@ -85,3 +87,30 @@ def auth_headers(client):
     return {
         "Authorization": f"Bearer {token}"
     }
+
+FAKE_AI_REPLY = "Based on your soil and season, irrigate every 5-7 days."
+
+@pytest.fixture(autouse=True)
+def mock_ai_provider(monkeypatch):
+    """
+    Replace AIProviderManager.generate_response with a stub so tests
+    never call real Gemini/OpenAI APIs. Autouse — applies to every
+    test in this file without needing to be requested explicitly.
+
+    Lives in conftest.py (not test_chat.py) so it's shared across
+    ALL test files in this session, including test_chat_rate_limit.py.
+    """
+
+    def _fake_generate_response(self, system_prompt, history, user_message):
+        return {
+            "text": FAKE_AI_REPLY,
+            "tokens": 42,
+            "provider": AIProviderEnum.GEMINI,
+            "response_time_ms": 250,
+        }
+
+    monkeypatch.setattr(
+        ai_provider_manager_module.AIProviderManager,
+        "generate_response",
+        _fake_generate_response,
+    )
