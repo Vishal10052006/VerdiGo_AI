@@ -27,3 +27,5 @@ from .crop_recommendation import CropRecommendation, CropRecommendationItem
 
 from .chat import ChatConversation, ChatMessage
 from .chat_rate_limit import ChatRateLimit
+
+from .disease_detection import DiseaseDetection

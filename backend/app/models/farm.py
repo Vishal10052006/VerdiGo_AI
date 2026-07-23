@@ -156,3 +156,10 @@ class Farm(Base):
         back_populates="farm",
         cascade="all, delete-orphan",
     )
+
+    # Add alongside weather_advisories relationship
+    disease_detections = relationship(
+        "DiseaseDetection",
+        back_populates="farm",
+        cascade="all, delete-orphan",
+    )

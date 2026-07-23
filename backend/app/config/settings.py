@@ -45,9 +45,6 @@ class Settings(BaseSettings):
     WEATHER_REQUEST_TIMEOUT: int
     WEATHER_CACHE_MINUTES: int
 
-
-    # Add to backend/app/config/settings.py
-
     # =========================
     # AI Chat Assistant
     # =========================
@@ -61,6 +58,13 @@ class Settings(BaseSettings):
 
     AI_REQUEST_TIMEOUT: int = 15
     AI_DAILY_MESSAGE_LIMIT: int = 100  # per-farmer rate limit — cost control
+
+
+    # =========================
+    # Disease Detection (AI Vision)
+    # =========================
+    DISEASE_UPLOAD_DIR: str = "uploads/disease"
+    GEMINI_VISION_MODEL: str = "gemini-2.0-flash"  # multimodal — reuse existing GEMINI_API_KEY
 
     # =========================
     # CORS

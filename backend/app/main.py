@@ -26,6 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.crop_recommendation import router as crop_recommendation_router
 from app.routes.chat import router as chat_router
+from app.routes.disease import router as disease_router
 
 
 # =====================================================
@@ -66,6 +67,7 @@ app.include_router(weather_router)
 
 app.include_router(crop_recommendation_router)
 app.include_router(chat_router)
+app.include_router(disease_router)
 
 # =====================================================
 # Static Files
