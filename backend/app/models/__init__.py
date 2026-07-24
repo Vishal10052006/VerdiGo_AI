@@ -29,3 +29,5 @@ from .chat import ChatConversation, ChatMessage
 from .chat_rate_limit import ChatRateLimit
 
 from .disease_detection import DiseaseDetection
+
+from .feature_rate_limit import FeatureRateLimit

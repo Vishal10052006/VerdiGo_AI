@@ -34,3 +34,6 @@ package-lock.json
 
 # Local authentication files
 .auth_*
+
+# Uploaded files
+backend/uploads/

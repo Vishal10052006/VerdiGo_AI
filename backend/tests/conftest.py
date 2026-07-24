@@ -13,6 +13,10 @@ Phase 1 → Module 5 → T5.4 Testing
 
 Author: VerdiGO Backend Team
 """
+import os
+from dotenv import load_dotenv
+
+load_dotenv(".env.test", override=True)
 
 # ============================================================================
 # Imports
@@ -31,6 +35,7 @@ import uuid
 from app.database.database import SessionLocal
 from app.repositories import otp_repository
 
+from unittest.mock import patch
 
 # ============================================================================
 # Test Client
@@ -113,4 +118,29 @@ def mock_ai_provider(monkeypatch):
         ai_provider_manager_module.AIProviderManager,
         "generate_response",
         _fake_generate_response,
+    )
+
+FAKE_VISION_RESULT = {
+    "is_healthy": False,
+    "disease_name": "Leaf Blight",
+    "confidence": 87.0,
+    "severity": "moderate",
+    "treatment": ["Apply copper-based fungicide.", "Remove affected leaves."],
+    "prevention_tips": ["Avoid overhead watering.", "Ensure good air circulation."],
+    "crop_identified": "Tomato",
+}
+
+
+@pytest.fixture(autouse=True)
+def mock_gemini_vision(monkeypatch):
+    """
+    Stub GeminiVisionClient.analyze_image so disease/pest detection
+    tests never call real Gemini Vision (cost + flakiness).
+    """
+    def _fake_analyze_image(self, image_bytes, mime_type):
+        return {"result": dict(FAKE_VISION_RESULT), "tokens": 120}
+
+    monkeypatch.setattr(
+        "app.services.ai.gemini_vision_client.GeminiVisionClient.analyze_image",
+        _fake_analyze_image,
     )

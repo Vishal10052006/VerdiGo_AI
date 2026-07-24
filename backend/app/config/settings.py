@@ -60,7 +60,8 @@ class Settings(BaseSettings):
 
     AI_REQUEST_TIMEOUT: int = 15
     AI_DAILY_MESSAGE_LIMIT: int = 100  # per-farmer rate limit — cost control
-
+    AI_DAILY_VISION_LIMIT: int = 20
+    
 
     # =========================
     # Disease Detection (AI Vision)
@@ -94,6 +95,17 @@ class Settings(BaseSettings):
         env_file=".env",
         extra="ignore",
     )
+
+    # =========================
+    # Storage
+    # =========================
+    STORAGE_PROVIDER: str = "local"  # "local" | "r2"
+
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET_NAME: str = ""
+    R2_PUBLIC_BASE_URL: str = ""  # e.g. https://pub-xxxx.r2.dev or your custom domain
 
 
 settings = Settings()
