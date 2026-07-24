@@ -16,6 +16,8 @@ Author: VerdiGO Backend Team
 import os
 from dotenv import load_dotenv
 
+from sqlalchemy import text
+
 load_dotenv(".env.test", override=True)
 
 # ============================================================================
@@ -144,3 +146,22 @@ def mock_gemini_vision(monkeypatch):
         "app.services.ai.gemini_vision_client.GeminiVisionClient.analyze_image",
         _fake_analyze_image,
     )
+
+
+@pytest.fixture(autouse=True)
+def _reset_daily_rate_limits():
+    """
+    Reset per-farmer daily usage counters before every test.
+
+    Autouse so no test file has to remember to request it — matches the
+    pattern already used by mock_ai_provider / mock_gemini_vision above.
+    """
+    db = SessionLocal()
+    try:
+        db.execute(text("DELETE FROM feature_rate_limits"))
+        db.execute(text("DELETE FROM chat_rate_limits"))
+        db.commit()
+    finally:
+        db.close()
+
+    yield
