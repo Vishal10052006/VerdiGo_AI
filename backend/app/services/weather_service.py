@@ -168,7 +168,7 @@ class WeatherService:
             self.cache_service.save_weather(
                 farm_id=farm_id,
                 provider=provider,
-                weather_type=WeatherTypeEnum.CURRENT,
+                weather_type=WeatherTypeEnum.FORECAST,
                 latitude=latitude,
                 longitude=longitude,
                 weather_data=normalized_weather,

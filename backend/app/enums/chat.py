@@ -1,4 +1,3 @@
-# backend/app/enums/chat.py
 from enum import Enum
 
 
@@ -20,3 +19,4 @@ class ChatIntentEnum(str, Enum):
 class AIProviderEnum(str, Enum):
     GEMINI = "gemini"
     OPENAI = "openai"
+    GROQ = "groq"

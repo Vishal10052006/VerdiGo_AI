@@ -55,6 +55,20 @@ class ChatService:
         if farmer_profile is None:
             raise NotFoundException(message="Farmer profile not found.")
 
+        current_count = chat_rate_limit_repository.increment_and_get_count(
+            db=self.db,
+            farmer_profile_id=farmer_profile.id,
+        )
+
+        if current_count > settings.AI_DAILY_MESSAGE_LIMIT:
+            raise TooManyRequestsException(
+                message=(
+                    f"You've reached today's limit of "
+                    f"{settings.AI_DAILY_MESSAGE_LIMIT} messages. "
+                    f"Please try again tomorrow."
+                )
+            )
+
         farm = farm_repository.get_by_farmer_profile_id(self.db, farmer_profile.id)
 
 

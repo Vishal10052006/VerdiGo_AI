@@ -49,13 +49,7 @@ def get_dashboard_summary(
     Retrieve dashboard summary for the authenticated user.
     """
 
-    print("=" * 60)
-    print("Dashboard Service User ID:", user_id)
-
     farmer_profile = get_dashboard_data(db, user_id)
-
-    print("Dashboard Repository Result:", farmer_profile)
-    print("=" * 60)
 
     if farmer_profile is None:
         return None
