@@ -29,3 +29,6 @@ __all__ = [
     "SeasonEnum",
     "WaterRequirementEnum",
 ]
+
+from .notification import NotificationTypeEnum, NotificationSeverityEnum
+__all__ += ["NotificationTypeEnum", "NotificationSeverityEnum"]

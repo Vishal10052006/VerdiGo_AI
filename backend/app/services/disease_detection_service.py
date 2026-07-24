@@ -37,6 +37,8 @@ from app.core.exceptions import (
     ServiceUnavailableException,
     TooManyRequestsException,
 )
+from app.services.notification_service import NotificationService
+from app.enums.notification import NotificationTypeEnum, NotificationSeverityEnum
 
 _MIME_TYPES = {
     ".jpg": "image/jpeg",
@@ -173,7 +175,28 @@ class DiseaseDetectionService:
             ai_provider="gemini",
         )
 
-        return disease_repository.create(db=self.db, detection=detection)
+        saved_detection = disease_repository.create(db=self.db, detection=detection)
+
+        # --------------------------------------------------------------
+        # Notify Farmer (non-healthy, above-threshold detections only)
+        # --------------------------------------------------------------
+        if not is_healthy and confidence >= MIN_CONFIDENCE_THRESHOLD:
+            NotificationService(self.db).notify(
+                farmer_profile_id=farm.farmer_profile_id,
+                type=NotificationTypeEnum.DISEASE,
+                severity=NotificationSeverityEnum(
+                    severity.value if severity.value != "none" else "moderate"
+                ),
+                title=f"Disease Detected: {disease_name}",
+                message=(
+                    f"AI detected {disease_name} in your crop with "
+                    f"{round(confidence)}% confidence."
+                ),
+                related_entity_id=saved_detection.id,
+                related_entity_type="disease_detection",
+            )
+
+        return saved_detection
 
     # ------------------------------------------------------------------------
     # Get History

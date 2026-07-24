@@ -57,6 +57,10 @@ from datetime import datetime, timezone
 from app.enums.advisory_severity import AdvisorySeverityEnum
 from app.enums.advisory_type import AdvisoryTypeEnum
 
+from app.services.notification_service import NotificationService
+from app.repositories import farmer_repository, farm_repository
+from app.enums.notification import NotificationTypeEnum, NotificationSeverityEnum
+
 # ============================================================================
 # Router Configuration
 # ============================================================================
@@ -225,6 +229,20 @@ def get_weather_advisories(
     advisories = advisory_service.generate_advisories(
         weather=weather,
     )
+    farm = farm_repository.get_by_id(db=db, farm_id=farm_id)
+    if farm:
+        notif_service = NotificationService(db)
+        for advisory in advisories:
+            if advisory["severity"] in ("high", "critical"):
+                notif_service.notify(
+                    farmer_profile_id=farm.farmer_profile_id,
+                    type=NotificationTypeEnum.WEATHER,
+                    severity=NotificationSeverityEnum(advisory["severity"]),
+                    title=advisory["title"],
+                    message=advisory["message"],
+                    related_entity_id=farm_id,
+                    related_entity_type="farm",
+                )
 
     # ------------------------------------------------------------------------
     # Build Response

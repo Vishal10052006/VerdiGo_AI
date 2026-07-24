@@ -31,3 +31,4 @@ from .chat_rate_limit import ChatRateLimit
 from .disease_detection import DiseaseDetection
 
 from .feature_rate_limit import FeatureRateLimit
+from .notification import Notification
