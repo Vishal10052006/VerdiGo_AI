@@ -29,6 +29,10 @@ from app.routes.chat import router as chat_router
 from app.routes.disease import router as disease_router
 from app.routes.notification import router as notification_router
 
+from app.routes.admin_auth import router as admin_auth_router
+from app.routes.admin_farmer import router as admin_farmer_router
+from app.routes.admin_analytics import router as admin_analytics_router
+
 
 # =====================================================
 # FastAPI Application
@@ -70,6 +74,10 @@ app.include_router(crop_recommendation_router)
 app.include_router(chat_router)
 app.include_router(disease_router)
 app.include_router(notification_router)
+
+app.include_router(admin_auth_router)
+app.include_router(admin_farmer_router)
+app.include_router(admin_analytics_router)
 
 # =====================================================
 # Static Files

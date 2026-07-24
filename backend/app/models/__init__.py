@@ -32,3 +32,5 @@ from .disease_detection import DiseaseDetection
 
 from .feature_rate_limit import FeatureRateLimit
 from .notification import Notification
+
+from .admin_user import AdminUser
