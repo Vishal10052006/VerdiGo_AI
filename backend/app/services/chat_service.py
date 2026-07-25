@@ -22,9 +22,6 @@ from app.services.ai.prompt_builder import build_system_prompt
 from app.services.ai.intent_classifier import classify_intent
 from app.services.weather_service import WeatherService
 from app.services.season_service import SeasonService
-from app.core.exceptions import NotFoundException
-
-from app.core.exceptions import NotFoundException, ServiceUnavailableException
 from app.core.exceptions import (
     NotFoundException,
     ServiceUnavailableException,
@@ -32,6 +29,8 @@ from app.core.exceptions import (
 )
 from app.repositories import chat_rate_limit_repository
 from app.config.settings import settings
+
+from app.services.ai.ai_provider_manager import AIProviderManager, AllAIProvidersUnavailableError
 
 
 MAX_HISTORY_MESSAGES = 10  # sliding window — cost + context-length control
@@ -57,13 +56,17 @@ class ChatService:
 
         # ------------------------------------------------------------
         # Rate Limit Check (cost control — before any AI spend)
+        #
+        # FIX: this call previously appeared TWICE in this method
+        # (once here, once again ~15 lines further down, right before
+        # farm_repository lookup). Each farmer message was therefore
+        # counted as 2 against AI_DAILY_MESSAGE_LIMIT, silently cutting
+        # every farmer off at roughly HALF their configured daily
+        # quota (e.g. a 100-message limit actually allowed ~50 sent
+        # messages before 429s started). This is now called exactly
+        # once per send_message invocation — single source of truth
+        # for "did this message count against today's limit."
         # ------------------------------------------------------------
-        # NOTE: previously this increment ran TWICE (once here, once
-        # again further down with an identical block) — every message
-        # silently counted as 2 against AI_DAILY_MESSAGE_LIMIT, cutting
-        # the real per-farmer daily allowance in half without anyone
-        # noticing, since no test exercised the exact boundary value
-        # until now. Fixed: single increment, single check.
         current_count = chat_rate_limit_repository.increment_and_get_count(
             db=self.db,
             farmer_profile_id=farmer_profile.id,
@@ -150,7 +153,12 @@ class ChatService:
                 history=history,
                 user_message=message,
             )
-        except Exception:
+        except AllAIProvidersUnavailableError:
+            # Full attempt trail (which providers, which error types)
+            # was already logged at ERROR level inside AIProviderManager.
+            # Farmer still sees the same clean, non-technical message —
+            # this fix is about server-side diagnosability, not about
+            # changing what the farmer sees.
             raise ServiceUnavailableException(
                 message="AI assistant is temporarily unavailable. Please try again shortly."
             )

@@ -33,6 +33,11 @@ from sqlalchemy.orm import Session
 
 from app.repositories import profile_repository
 from app.schemas.farmer import FarmerProfileUpdate
+from app.services.storage import get_storage_provider
+from app.utils.image_processing import resize_and_compress_profile_image
+from app.constants.profile import PROFILE_IMAGE_OUTPUT_EXTENSION
+
+from app.services.dashboard import invalidate_dashboard_cache
 
 
 # ============================================================================
@@ -78,7 +83,10 @@ def update_profile(
     profile_data: FarmerProfileUpdate,
 ):
     """
-    Update farmer profile.
+    Partially update farmer profile.
+    Only fields explicitly sent by the client are changed — this now
+    works correctly because FarmerProfileUpdate makes every field
+    Optional (see schemas/farmer.py fix).
     """
 
     farmer_profile = profile_repository.get_farmer_profile(
@@ -92,7 +100,8 @@ def update_profile(
         )
 
     data = profile_data.model_dump(
-        exclude_unset=True
+        exclude_unset=True,
+        exclude_none=True,
     )
 
     if not data:
@@ -105,6 +114,7 @@ def update_profile(
         farmer_profile=farmer_profile,
         data=data,
     )
+    invalidate_dashboard_cache(user_id)
 
     return updated_profile
 
@@ -120,6 +130,15 @@ def upload_profile_image(
 ) -> str:
     """
     Upload and update the user's profile image.
+
+    Pipeline: validate extension/size -> decode + resize + compress
+    (image_processing.py) -> save via storage abstraction (local/R2) ->
+    delete old image -> update DB.
+
+    Images are always re-encoded to JPEG at a capped resolution
+    (PROFILE_IMAGE_MAX_DIMENSION, see constants/profile.py) regardless
+    of upload format/size — fixes the prior gap where a 5MB avatar was
+    stored byte-for-byte as uploaded.
     """
 
     # ------------------------------------------------------------
@@ -139,7 +158,7 @@ def upload_profile_image(
     # Validate File Extension
     # ------------------------------------------------------------
     extension = os.path.splitext(
-        file.filename
+        file.filename or ""
     )[1].lower()
 
     if extension not in settings.ALLOWED_IMAGE_EXTENSIONS:
@@ -148,10 +167,16 @@ def upload_profile_image(
         )
 
     # ------------------------------------------------------------
-    # Validate File Size
+    # Validate File Size (pre-compression cap — reject absurdly
+    # large uploads before we spend CPU decoding them)
     # ------------------------------------------------------------
     contents = file.file.read()
     file.file.seek(0)
+
+    if not contents:
+        raise ValueError(
+            "Uploaded file is empty."
+        )
 
     if len(contents) > settings.MAX_IMAGE_SIZE:
         raise ValueError(
@@ -159,44 +184,38 @@ def upload_profile_image(
         )
 
     # ------------------------------------------------------------
-    # Generate Unique Filename
+    # Resize + Compress
+    #
+    # This is also a second, stronger validation layer than the
+    # extension check: Pillow will raise (caught and re-raised as
+    # ValueError) if `contents` isn't actually a decodable image,
+    # e.g. someone renaming a .exe to .jpg to get past the extension
+    # filter. The extension check alone never caught that.
     # ------------------------------------------------------------
-    filename = f"{uuid.uuid4()}{extension}"
+    processed_bytes = resize_and_compress_profile_image(contents)
 
-    file_path = os.path.join(
-        settings.PROFILE_UPLOAD_DIR,
-        filename,
-    )
+    # ------------------------------------------------------------
+    # Delete Previous Image (best-effort, via storage provider)
+    # ------------------------------------------------------------
+    storage = get_storage_provider()
 
-    # ------------------------------------------------------------
-    # Delete Previous Image
-    # ------------------------------------------------------------
     if user.profile_image_url:
-
-        old_file = user.profile_image_url.replace(
-            "/uploads/profile/",
-            "",
-        )
-
-        old_path = os.path.join(
-            settings.PROFILE_UPLOAD_DIR,
-            old_file,
-        )
-
-        if os.path.exists(old_path):
-            os.remove(old_path)
+        storage.delete(user.profile_image_url)
 
     # ------------------------------------------------------------
-    # Save Image
+    # Generate Unique Filename + Save via Storage Provider
+    #
+    # Always .jpg now, regardless of upload extension — output is
+    # normalized to PROFILE_IMAGE_OUTPUT_FORMAT (JPEG) by the resize
+    # step above, so the stored filename must match the actual bytes.
     # ------------------------------------------------------------
-    with open(file_path, "wb") as image:
+    filename = f"{uuid.uuid4()}{PROFILE_IMAGE_OUTPUT_EXTENSION}"
 
-        image.write(contents)
-
-    # ------------------------------------------------------------
-    # Public URL
-    # ------------------------------------------------------------
-    image_url = f"/uploads/profile/{filename}"
+    image_url = storage.save(
+        file_bytes=processed_bytes,
+        filename=filename,
+        folder="profile",
+    )
 
     # ------------------------------------------------------------
     # Update Database
@@ -206,6 +225,7 @@ def upload_profile_image(
         user=user,
         profile_image_url=image_url,
     )
+    invalidate_dashboard_cache(user_id)
 
     return image_url
 

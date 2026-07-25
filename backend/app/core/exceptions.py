@@ -45,7 +45,7 @@ class UserNotFoundException(HTTPException):
         )
 
 class TooManyRequestsException(HTTPException):
-    def __init__(self, message: str = "Daily message limit reached."):
+    def __init__(self, message: str = "Too many requests. Please try again later."):
         super().__init__(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=message)
 
 

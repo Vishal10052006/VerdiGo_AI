@@ -19,7 +19,6 @@ Author: VerdiGO Backend Team
 # ============================================================================
 
 import httpx
-from uuid import UUID
 
 from app.config.settings import settings
 
@@ -34,10 +33,6 @@ class OpenMeteoClient:
     """
 
     def __init__(self):
-        """
-        Initialize provider configuration.
-        """
-
         self.base_url = settings.OPENMETEO_BASE_URL
         self.timeout = settings.WEATHER_REQUEST_TIMEOUT
 
@@ -47,12 +42,15 @@ class OpenMeteoClient:
 
     def get_current_weather(
         self,
-        farm_id: UUID,
         latitude: float,
         longitude: float,
     ) -> dict:
         """
-        Fetch current weather.
+        Fetch current weather. Signature intentionally matches
+        WeatherAPIClient.get_current_weather(latitude, longitude) —
+        WeatherProviderManager calls both clients interchangeably
+        through the same fallback path and requires matching call
+        signatures.
         """
 
         endpoint = f"{self.base_url}/forecast"
@@ -69,14 +67,8 @@ class OpenMeteoClient:
         }
 
         with httpx.Client(timeout=self.timeout) as client:
-
-            response = client.get(
-                endpoint,
-                params=params,
-            )
-
+            response = client.get(endpoint, params=params)
             response.raise_for_status()
-
             return response.json()
 
     # ------------------------------------------------------------------------
@@ -85,13 +77,17 @@ class OpenMeteoClient:
 
     def get_forecast(
         self,
-        farm_id: UUID,
         latitude: float,
         longitude: float,
         days: int = 5,
     ) -> dict:
         """
-        Fetch weather forecast.
+        Fetch weather forecast. Requests every field
+        WeatherNormalizer.normalize_openmeteo_forecast() consumes
+        (temperature min/max, precipitation, humidity mean, max wind,
+        weather code) — previously several of these were missing,
+        causing a KeyError the first time this path's data reached
+        the normalizer.
         """
 
         endpoint = f"{self.base_url}/forecast"
@@ -103,18 +99,15 @@ class OpenMeteoClient:
             "daily": (
                 "temperature_2m_max,"
                 "temperature_2m_min,"
-                "precipitation_sum"
+                "precipitation_sum,"
+                "relative_humidity_2m_mean,"
+                "wind_speed_10m_max,"
+                "weather_code"
             ),
             "timezone": "auto",
         }
 
         with httpx.Client(timeout=self.timeout) as client:
-
-            response = client.get(
-                endpoint,
-                params=params,
-            )
-
+            response = client.get(endpoint, params=params)
             response.raise_for_status()
-
             return response.json()

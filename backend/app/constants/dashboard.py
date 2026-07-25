@@ -21,3 +21,17 @@ FARMER_OVERVIEW_LOADED = "Farmer overview loaded successfully."
 FARMER_PROFILE_NOT_FOUND = "Farmer profile not found."
 
 FARM_NOT_FOUND = "Farm information not found."
+
+
+# ============================================================================
+# Cache Configuration
+# ============================================================================
+
+# Short TTL — dashboard data (farm info, profile completion, weather) does
+# not change second-to-second. 60s balances "feels live" against cutting
+# repeated DB hits when a farmer refreshes/reopens the dashboard rapidly.
+# Weather itself has its own longer-lived cache (WEATHER_CACHE_MINUTES) —
+# this cache wraps the *whole assembled response*, avoiding the farm/user
+# join + profile-completion recomputation on every hit, not just the
+# weather API call.
+DASHBOARD_CACHE_TTL_SECONDS = 60

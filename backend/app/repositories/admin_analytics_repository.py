@@ -99,3 +99,50 @@ def daily_signups(db: Session, days: int) -> list[tuple[str, int]]:
     )
 
     return [(str(day), count) for day, count in rows]
+
+
+def total_tokens_used(db: Session) -> int:
+    """
+    Sum of tokens_used across all chat messages. NULL-safe (older
+    rows or failed-to-log messages may have tokens_used=None).
+    """
+    return (
+        db.query(func.coalesce(func.sum(ChatMessage.tokens_used), 0))
+        .scalar()
+        or 0
+    )
+
+
+def tokens_used_since(db: Session, since: datetime) -> int:
+    """
+    Sum of tokens_used for messages created since a given timestamp —
+    used for "tokens used today" / "tokens used this week" views.
+    """
+    return (
+        db.query(func.coalesce(func.sum(ChatMessage.tokens_used), 0))
+        .filter(ChatMessage.created_at >= since)
+        .scalar()
+        or 0
+    )
+
+
+def token_usage_by_provider(db: Session) -> list[tuple[str, int, int]]:
+    """
+    Returns (provider, message_count, total_tokens) grouped by
+    ai_provider — lets you see Gemini vs OpenAI vs Groq cost/usage
+    split at a glance (e.g. "how often is fallback actually firing").
+    """
+    rows = (
+        db.query(
+            ChatMessage.ai_provider,
+            func.count(ChatMessage.id),
+            func.coalesce(func.sum(ChatMessage.tokens_used), 0),
+        )
+        .filter(ChatMessage.ai_provider.isnot(None))
+        .group_by(ChatMessage.ai_provider)
+        .all()
+    )
+    return [
+        (provider.value if hasattr(provider, "value") else str(provider), count, tokens)
+        for provider, count, tokens in rows
+    ]

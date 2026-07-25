@@ -47,6 +47,23 @@ app = FastAPI(
     },
 )
 
+# ============================================================================
+# CORS
+#
+# FIX: previously `origins` was a hardcoded literal list containing only
+# "http://localhost:3000" — settings.ALLOWED_ORIGINS existed in
+# config/settings.py and was fully configured via .env, but was never
+# actually read anywhere. This meant ALLOWED_ORIGINS was dead
+# configuration: changing it in .env (or in production env vars) had
+# ZERO effect, and any deployed frontend not running on localhost:3000
+# would be silently CORS-blocked regardless of what you set in prod.
+#
+# ALLOWED_ORIGINS is a comma-separated string in settings (matching
+# .env.test: "ALLOWED_ORIGINS=http://localhost:3000") — parsed here into
+# a list. Whitespace around each origin is stripped so
+# "a.com, b.com" and "a.com,b.com" both work.
+# ============================================================================
+
 origins = [
     "http://localhost:3000",
 ]

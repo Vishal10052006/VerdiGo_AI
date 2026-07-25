@@ -177,6 +177,15 @@ class WeatherNormalizer:
         """
         Normalize Open-Meteo forecast response into
         VerdiGO's unified forecast format.
+
+        Uses .get() with safe defaults instead of direct key access —
+        previously direct `daily["relative_humidity_2m_mean"]` and
+        `daily["wind_speed_10m_max"]` access caused an unguarded
+        KeyError whenever those fields weren't present in the response
+        (they weren't, until openmeteo_client.py was fixed to request
+        them). Kept defensive even after that client fix, so a future
+        params change that drops a field degrades to a default value
+        instead of a 500.
         """
 
         daily = data["daily"]
@@ -184,6 +193,10 @@ class WeatherNormalizer:
         forecast_days = []
 
         for index, forecast_date in enumerate(daily["time"]):
+
+            humidity_list = daily.get("relative_humidity_2m_mean")
+            wind_list = daily.get("wind_speed_10m_max")
+            weather_code_list = daily.get("weather_code")
 
             forecast_days.append({
 
@@ -195,12 +208,16 @@ class WeatherNormalizer:
 
                 "rainfall": daily["precipitation_sum"][index],
 
-                "humidity": daily["relative_humidity_2m_mean"][index],
+                "humidity": (
+                    humidity_list[index] if humidity_list else 0
+                ),
 
-                "wind_speed": daily["wind_speed_10m_max"][index],
+                "wind_speed": (
+                    wind_list[index] if wind_list else 0
+                ),
 
                 "condition": OPEN_METEO_WEATHER_CODES.get(
-                    daily["weather_code"][index],
+                    weather_code_list[index] if weather_code_list else None,
                     "Unknown",
                 ),
 

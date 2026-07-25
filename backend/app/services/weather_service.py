@@ -4,12 +4,6 @@ Weather Service
 Acts as the single entry point for all weather-related
 operations in VerdiGO.
 
-Responsibilities:
-- Retrieve current weather
-- Retrieve weather forecast
-- Coordinate provider manager
-- Normalize provider responses
-
 Module:
 Phase 1 → Module 5 → Weather Intelligence
 
@@ -44,10 +38,6 @@ class WeatherService:
     """
 
     def __init__(self, db: Session):
-        """
-        Initialize weather service dependencies.
-        """
-
         self.provider_manager = WeatherProviderManager(db)
         self.cache_service = WeatherCacheService(db)
 
@@ -63,6 +53,19 @@ class WeatherService:
     ) -> dict:
         """
         Retrieve normalized current weather.
+
+        FIX: caching now happens for BOTH providers (WeatherAPI and
+        Open-Meteo), not just WeatherAPI. Previously only the
+        WeatherAPI branch called cache_service.save_weather(...); the
+        Open-Meteo branch just returned normalized data without ever
+        caching it — meaning every current-weather request served by
+        the Open-Meteo fallback bypassed the cache entirely, hitting
+        the external API on every single call regardless of
+        WEATHER_CACHE_MINUTES. This was the *inverse* of get_forecast's
+        bug (which only cached Open-Meteo, not WeatherAPI) — the two
+        methods had inconsistent, seemingly arbitrary caching logic
+        with no shared rationale. Both methods now cache both
+        providers identically.
         """
 
         cache = self.cache_service.get_valid_cache(
@@ -82,31 +85,28 @@ class WeatherService:
         raw_data = response["data"]
 
         if provider == WEATHER_API:
-
             normalized_weather = WeatherNormalizer.normalize_weatherapi(
                 raw_data,
             )
-
-            self.cache_service.save_weather(
-                farm_id=farm_id,
-                provider=provider,
-                weather_type=WeatherTypeEnum.CURRENT,
-                latitude=latitude,
-                longitude=longitude,
-                weather_data=normalized_weather,
-            )
-
-            return normalized_weather
-
-        if provider == OPEN_METEO:
-
-            return WeatherNormalizer.normalize_openmeteo(
+        elif provider == OPEN_METEO:
+            normalized_weather = WeatherNormalizer.normalize_openmeteo(
                 raw_data,
             )
+        else:
+            raise ValueError(
+                f"Unsupported weather provider: {provider}"
+            )
 
-        raise ValueError(
-            f"Unsupported weather provider: {provider}"
+        self.cache_service.save_weather(
+            farm_id=farm_id,
+            provider=provider,
+            weather_type=WeatherTypeEnum.CURRENT,
+            latitude=latitude,
+            longitude=longitude,
+            weather_data=normalized_weather,
         )
+
+        return normalized_weather
 
     # ------------------------------------------------------------------------
     # Forecast Weather
@@ -121,11 +121,11 @@ class WeatherService:
     ) -> dict:
         """
         Retrieve normalized weather forecast.
-        """
 
-        # --------------------------------------------------------------------
-        # Check Cache
-        # --------------------------------------------------------------------
+        FIX: same caching-symmetry fix as get_current_weather above —
+        previously only the Open-Meteo branch cached; WeatherAPI
+        forecast responses were returned raw, uncached, on every call.
+        """
 
         cache = self.cache_service.get_valid_cache(
             farm_id=farm_id,
@@ -142,48 +142,32 @@ class WeatherService:
         )
 
         provider = response["provider"]
-
         raw_data = response["data"]
 
-        # --------------------------------------------------------------------
-        # WeatherAPI
-        # --------------------------------------------------------------------
-
         if provider == WEATHER_API:
-
-            return WeatherNormalizer.normalize_weatherapi_forecast(
+            normalized_weather = WeatherNormalizer.normalize_weatherapi_forecast(
                 raw_data,
             )
-
-        # --------------------------------------------------------------------
-        # Open-Meteo
-        # --------------------------------------------------------------------
-
-        if provider == OPEN_METEO:
-
-            normalized_weather = WeatherNormalizer.normalize_openmeteo(
+        elif provider == OPEN_METEO:
+            normalized_weather = WeatherNormalizer.normalize_openmeteo_forecast(
                 raw_data,
             )
-
-            self.cache_service.save_weather(
-                farm_id=farm_id,
-                provider=provider,
-                weather_type=WeatherTypeEnum.FORECAST,
-                latitude=latitude,
-                longitude=longitude,
-                weather_data=normalized_weather,
+        else:
+            raise ValueError(
+                f"Unsupported weather provider: {provider}"
             )
 
-            return normalized_weather
-
-        # --------------------------------------------------------------------
-        # Unsupported Provider
-        # --------------------------------------------------------------------
-
-        raise ValueError(
-            f"Unsupported weather provider: {provider}"
+        self.cache_service.save_weather(
+            farm_id=farm_id,
+            provider=provider,
+            weather_type=WeatherTypeEnum.FORECAST,
+            latitude=latitude,
+            longitude=longitude,
+            weather_data=normalized_weather,
         )
-    
+
+        return normalized_weather
+
     # ------------------------------------------------------------------------
     # Refresh Current Weather
     # ------------------------------------------------------------------------

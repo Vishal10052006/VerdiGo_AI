@@ -24,6 +24,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.repositories.dashboard import get_dashboard_data
+from app.repositories import profile_repository
 from app.schemas.dashboard import (
     DashboardDataSchema,
     DashboardStatisticsSchema,
@@ -35,6 +36,34 @@ from app.services.weather_service import WeatherService
 from app.schemas.weather import (
     CurrentWeatherSchema,
 )
+from app.utils.ttl_cache import dashboard_cache
+from app.constants.dashboard import DASHBOARD_CACHE_TTL_SECONDS
+
+
+# ============================================================================
+# Cache Key Helper
+# ============================================================================
+
+def _cache_key(user_id: UUID) -> str:
+    return f"dashboard:{user_id}"
+
+
+# ============================================================================
+# Invalidate Dashboard Cache
+#
+# Call this from anywhere that mutates data the dashboard reflects:
+# farmer_service.update_farmer_profile, farm_service.create_farm/update_farm,
+# profile_service.upload_profile_image. Without this, a farmer who edits
+# their profile could see stale data for up to DASHBOARD_CACHE_TTL_SECONDS.
+# ============================================================================
+
+def invalidate_dashboard_cache(user_id: UUID) -> None:
+    """
+    Drop the cached dashboard for a specific user. Safe to call even
+    if nothing is cached for them (no-op).
+    """
+
+    dashboard_cache.invalidate(_cache_key(user_id))
 
 
 # ============================================================================
@@ -47,7 +76,21 @@ def get_dashboard_summary(
 ) -> DashboardDataSchema | None:
     """
     Retrieve dashboard summary for the authenticated user.
+
+    Cached in-process for DASHBOARD_CACHE_TTL_SECONDS to avoid
+    re-running the farm/user join and profile-completion calculation
+    on every dashboard load/refresh. Weather still respects its own
+    independent cache inside WeatherService — this cache wraps the
+    *entire assembled response*, so a cache hit here skips weather
+    lookup too (which is itself already cached, so this is a second,
+    coarser layer on top, not a duplicate of it).
     """
+
+    cache_key = _cache_key(user_id)
+
+    cached = dashboard_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     farmer_profile = get_dashboard_data(db, user_id)
 
@@ -60,6 +103,7 @@ def get_dashboard_summary(
 
     farms = []
     primary_farm = None
+    primary_farm_model = None
 
     if farmer_profile.farms:
 
@@ -68,26 +112,30 @@ def get_dashboard_summary(
             for farm in farmer_profile.farms
         ]
 
-        first_farm = farmer_profile.farms[0]
+        primary_farm_model = farmer_profile.farms[0]
 
         primary_farm = PrimaryFarmSchema(
-            id=first_farm.id,
-            farm_name=first_farm.farm_name,
+            id=primary_farm_model.id,
+            farm_name=primary_farm_model.farm_name,
             village=farmer_profile.village,
             district=farmer_profile.district,
             state=farmer_profile.state,
         )
 
+    # ============================================================================
+    # Weather (best-effort)
+    # ============================================================================
+
     weather = None
 
-    if primary_farm:
+    if primary_farm_model is not None:
 
         weather_service = WeatherService(db)
 
         weather_data = weather_service.get_current_weather(
-            farm_id=first_farm.id,
-            latitude=first_farm.latitude,
-            longitude=first_farm.longitude,
+            farm_id=primary_farm_model.id,
+            latitude=primary_farm_model.latitude,
+            longitude=primary_farm_model.longitude,
         )
 
         weather = CurrentWeatherSchema.model_validate(
@@ -99,10 +147,15 @@ def get_dashboard_summary(
         - farmer_profile.created_at
     ).days
 
-    if farmer_profile.profile_completed:
-        completion_percentage = 100 if farms else 50
-    else:
-        completion_percentage = 0
+    # ============================================================================
+    # Profile Completion — single source of truth
+    # ============================================================================
+
+    completion_percentage = profile_repository.get_profile_completion(
+        user=farmer_profile.user,
+        farmer_profile=farmer_profile,
+        farms=farmer_profile.farms,
+    )
 
     statistics = DashboardStatisticsSchema(
         profile_completed=farmer_profile.profile_completed,
@@ -129,10 +182,14 @@ def get_dashboard_summary(
         state=farmer_profile.state,
     )
 
-    return DashboardDataSchema(
+    result = DashboardDataSchema(
         farmer=farmer,
         primary_farm=primary_farm,
         farms=farms,
         statistics=statistics,
         weather=weather,
     )
+
+    dashboard_cache.set(cache_key, result, DASHBOARD_CACHE_TTL_SECONDS)
+
+    return result

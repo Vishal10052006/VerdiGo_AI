@@ -25,6 +25,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     field_validator,
+    model_validator,
 )
 
 from app.enums.land_unit import LandUnitEnum
@@ -32,15 +33,47 @@ from app.enums.soil_type import SoilTypeEnum
 
 
 # ============================================================================
-# Farm Base
+# Shared Field Validators (reusable across Create + Update)
 # ============================================================================
 
-class FarmBase(BaseModel):
-    """
-    Base schema containing shared farm fields
-    and validation logic.
-    """
+def _validate_farm_name(value: str) -> str:
+    value = value.strip()
+    if len(value) < 2:
+        raise ValueError("Farm name must be at least 2 characters.")
+    if len(value) > 100:
+        raise ValueError("Farm name cannot exceed 100 characters.")
+    if not re.fullmatch(r"[A-Za-z0-9 .&'-]+", value):
+        raise ValueError(
+            "Farm name can contain only alphabets, numbers, spaces, dots, hyphens, apostrophes, and '&'."
+        )
+    return value
 
+
+def _validate_land_area(value: float) -> float:
+    if value <= 0:
+        raise ValueError("Land area must be greater than 0.")
+    if value > 100000:
+        raise ValueError("Land area cannot exceed 100000.")
+    return value
+
+
+def _validate_latitude(value: float) -> float:
+    if value < -90 or value > 90:
+        raise ValueError("Latitude must be between -90 and 90.")
+    return value
+
+
+def _validate_longitude(value: float) -> float:
+    if value < -180 or value > 180:
+        raise ValueError("Longitude must be between -180 and 180.")
+    return value
+
+
+# ============================================================================
+# Farm Create (all fields required — creating a farm needs full data)
+# ============================================================================
+
+class FarmCreate(BaseModel):
     farm_name: str
     land_area: float
     land_unit: Optional[LandUnitEnum] = None
@@ -48,166 +81,100 @@ class FarmBase(BaseModel):
     latitude: float
     longitude: float
 
-    # ------------------------------------------------------------------------
-    # Farm Name Validation
-    # ------------------------------------------------------------------------
-
     @field_validator("farm_name")
     @classmethod
-    def validate_farm_name(cls, value: str) -> str:
-        """
-        Validate farm name.
-        """
-
-        value = value.strip()
-
-        if len(value) < 2:
-            raise ValueError(
-                "Farm name must be at least 2 characters."
-            )
-
-        if len(value) > 100:
-            raise ValueError(
-                "Farm name cannot exceed 100 characters."
-            )
-        
-        if not re.fullmatch(r"[A-Za-z0-9 .&'-]+", value):
-            raise ValueError(
-                "Farm name can contain only alphabets, numbers, spaces, dots, hyphens, apostrophes, and '&'."
-            )
-
-        return value
-
-
-    # ------------------------------------------------------------------------
-    # Land Area Validation
-    # ------------------------------------------------------------------------
+    def _name(cls, v):
+        return _validate_farm_name(v)
 
     @field_validator("land_area")
     @classmethod
-    def validate_land_area(cls, value: float) -> float:
-        """
-        Validate farm land area.
-        """
-
-        if value <= 0:
-            raise ValueError(
-                "Land area must be greater than 0."
-            )
-
-        if value > 100000:
-            raise ValueError(
-                "Land area cannot exceed 100000."
-            )
-
-        return value
-
-    # ------------------------------------------------------------------------
-    # Land Unit Validation
-    # ------------------------------------------------------------------------
+    def _area(cls, v):
+        return _validate_land_area(v)
 
     @field_validator("land_unit", mode="before")
     @classmethod
-    def validate_land_unit(cls, value):
-        """
-        Normalize land unit before enum validation.
-        Accepts Acre, acre, ACRE, etc.
-        """
-
-        if value is None:
-            return value
-
-        if isinstance(value, str):
-            value = value.strip().capitalize()
-
-        return value
-
-    # ------------------------------------------------------------------------
-    # Soil Type Validation
-    # ------------------------------------------------------------------------
+    def _unit(cls, v):
+        if isinstance(v, str):
+            v = v.strip().capitalize()
+        return v
 
     @field_validator("soil_type", mode="before")
     @classmethod
-    def validate_soil_type(cls, value):
-        """
-        Normalize soil type before enum validation.
-        Accepts Clay, clay, CLAY, etc.
-        """
+    def _soil(cls, v):
+        if isinstance(v, str):
+            v = v.strip().capitalize()
+        return v
 
-        if isinstance(value, str):
-            value = value.strip().capitalize()
-
-        return value
-
-    # ------------------------------------------------------------------------
-    # Latitude Validation
-    # ------------------------------------------------------------------------
-                                                   
     @field_validator("latitude")
     @classmethod
-    def validate_latitude(cls, value: float) -> float:
-        """
-        Validate farm latitude.
-        """
-
-        if value < -90:
-            raise ValueError(
-                "Latitude must be greater than or equal to -90."
-            )
-
-        if value > 90:
-            raise ValueError(
-                "Latitude must be less than or equal to 90."
-            )
-
-        return value
-
-    # ------------------------------------------------------------------------
-    # Longitude Validation
-    # ------------------------------------------------------------------------
+    def _lat(cls, v):
+        return _validate_latitude(v)
 
     @field_validator("longitude")
     @classmethod
-    def validate_longitude(cls, value: float) -> float:
-        """
-        Validate farm longitude.
-        """
-
-        if value < -180:
-            raise ValueError(
-                "Longitude must be greater than or equal to -180."
-            )
-
-        if value > 180:
-            raise ValueError(
-                "Longitude must be less than or equal to 180."
-            )
-
-        return value
+    def _lng(cls, v):
+        return _validate_longitude(v)
 
 
 # ============================================================================
-# Create Farm Request
+# Farm Update — TRUE PARTIAL UPDATE
+#
+# Every field is Optional. Only fields explicitly sent by the client are
+# validated and applied. This fixes the bug where `exclude_unset=True` in
+# farm_service.update_farm() was a no-op because the old schema required
+# every field, forcing clients to resend the entire farm on every PUT.
 # ============================================================================
 
-class FarmCreate(FarmBase):
-    """
-    Request schema for creating a farm.
-    """
+class FarmUpdate(BaseModel):
+    farm_name: Optional[str] = None
+    land_area: Optional[float] = None
+    land_unit: Optional[LandUnitEnum] = None
+    soil_type: Optional[SoilTypeEnum] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
-    pass
+    @field_validator("farm_name")
+    @classmethod
+    def _name(cls, v):
+        return _validate_farm_name(v) if v is not None else v
 
+    @field_validator("land_area")
+    @classmethod
+    def _area(cls, v):
+        return _validate_land_area(v) if v is not None else v
 
-# ============================================================================
-# Update Farm Request
-# ============================================================================
+    @field_validator("land_unit", mode="before")
+    @classmethod
+    def _unit(cls, v):
+        if isinstance(v, str):
+            v = v.strip().capitalize()
+        return v
 
-class FarmUpdate(FarmBase):
-    """
-    Request schema for updating a farm.
-    """
+    @field_validator("soil_type", mode="before")
+    @classmethod
+    def _soil(cls, v):
+        if isinstance(v, str):
+            v = v.strip().capitalize()
+        return v
 
-    pass
+    @field_validator("latitude")
+    @classmethod
+    def _lat(cls, v):
+        return _validate_latitude(v) if v is not None else v
+
+    @field_validator("longitude")
+    @classmethod
+    def _lng(cls, v):
+        return _validate_longitude(v) if v is not None else v
+
+    @model_validator(mode="after")
+    def _at_least_one_field(self):
+        if all(
+            getattr(self, f) is None
+            for f in ("farm_name", "land_area", "land_unit", "soil_type", "latitude", "longitude")
+        ):
+            raise ValueError("At least one field must be provided to update the farm.")
+        return self
 
 
 # ============================================================================
@@ -215,22 +182,13 @@ class FarmUpdate(FarmBase):
 # ============================================================================
 
 class FarmResponse(BaseModel):
-    """
-    Response schema returned after creating or fetching
-    farm information.
-    """
-
     id: UUID
     farmer_profile_id: UUID
-
     farm_name: str
     land_area: float
     land_unit: Optional[LandUnitEnum] = None
     soil_type: SoilTypeEnum
-
     latitude: float
     longitude: float
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+    model_config = ConfigDict(from_attributes=True)

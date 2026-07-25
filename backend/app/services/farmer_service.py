@@ -36,6 +36,7 @@ from app.core.exceptions import (
     BadRequestException,
     NotFoundException,
 )
+from app.services.dashboard import invalidate_dashboard_cache
 
 
 # ============================================================================
@@ -137,25 +138,21 @@ def update_farmer_profile(
     current_user: User,
     request: FarmerProfileUpdate,
 ) -> dict:
-    """
-    Update the authenticated user's farmer profile.
-    """
-
     farmer_profile = farmer_repository.get_by_user_id(
         db=db,
         user_id=current_user.id,
     )
 
     if farmer_profile is None:
-        raise NotFoundException(
-            message="Farmer profile not found."
-        )
+        raise NotFoundException(message="Farmer profile not found.")
 
     updated_profile = farmer_repository.update(
         db=db,
         farmer_profile=farmer_profile,
-        data=request.model_dump(exclude_unset=True),
+        data=request.model_dump(exclude_unset=True, exclude_none=True),
     )
+
+    invalidate_dashboard_cache(current_user.id)
 
     return {
         "success": True,

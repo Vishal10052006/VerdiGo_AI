@@ -1,14 +1,5 @@
-# backend/app/scripts/seed_admin.py
-"""
-Seed First Admin
-
-Usage:
-    python -m app.scripts.seed_admin --email you@verdigo.ai --password "StrongPass123!" --name "Vishal Raj"
-
-Module: Phase 1 → Module 10 → Admin Panel
-"""
-
 import argparse
+import getpass
 
 from app.database.database import SessionLocal
 from app.models.admin_user import AdminUser
@@ -39,10 +30,20 @@ def seed_admin(email: str, password: str, full_name: str) -> None:
 
 
 if __name__ == "__main__":
+    # FIX: password no longer accepted as a CLI arg (--password), which
+    # would appear in shell history and `ps`/process listings. Now
+    # prompted interactively via getpass (input not echoed to terminal,
+    # not stored in shell history).
     parser = argparse.ArgumentParser()
     parser.add_argument("--email", required=True)
-    parser.add_argument("--password", required=True)
     parser.add_argument("--name", required=True)
     args = parser.parse_args()
 
-    seed_admin(args.email, args.password, args.name)
+    password = getpass.getpass("Admin password: ")
+    password_confirm = getpass.getpass("Confirm password: ")
+
+    if password != password_confirm:
+        print("❌ Passwords do not match.")
+        raise SystemExit(1)
+
+    seed_admin(args.email, password, args.name)

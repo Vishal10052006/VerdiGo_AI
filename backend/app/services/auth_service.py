@@ -22,6 +22,8 @@ from app.core.exceptions import (
     TooManyRequestsException,
     UnauthorizedException,
 )
+from app.utils.rate_limiter import otp_send_limiter
+from app.constants.auth import OTP_SEND_MAX_PER_WINDOW, OTP_SEND_WINDOW_SECONDS
 
 logger = logging.getLogger(__name__)
 
@@ -85,28 +87,26 @@ def register_user(db: Session, mobile: str) -> User:
 
 def login_user(db: Session, mobile: str) -> dict:
     """
-    Send an OTP to `mobile`.
+    Send an OTP to the given mobile number.
 
-    Rate limited BEFORE any OTP is generated or sent — this closes
-    the gap flagged in the Module 1 security review, where
-    /auth/send-otp had no request-level limit and could be used to
-    SMS-bomb a number or exhaust SMS provider budget. OTP_MAX_ATTEMPTS
-    only limited *verify* attempts, not *send* attempts.
+    FIX: rate-limited per mobile number — max OTP_SEND_MAX_PER_WINDOW
+    sends per OTP_SEND_WINDOW_SECONDS. Previously unthrottled, allowing
+    SMS-budget exhaustion or harassment-via-OTP-spam against any phone
+    number, since /auth/send-otp requires no prior authentication.
     """
 
-    allowed, _current_count = otp_rate_limit_repository.check_and_increment(
-        db=db,
-        mobile=mobile,
-        window_minutes=settings.OTP_SEND_WINDOW_MINUTES,
-        max_requests=settings.OTP_SEND_MAX_REQUESTS,
-    )
-
-    if not allowed:
+    if not otp_send_limiter.is_allowed(
+        key=mobile,
+        max_calls=OTP_SEND_MAX_PER_WINDOW,
+        window_seconds=OTP_SEND_WINDOW_SECONDS,
+    ):
+        retry_after = otp_send_limiter.seconds_until_next_allowed(
+            key=mobile, window_seconds=OTP_SEND_WINDOW_SECONDS,
+        )
         raise TooManyRequestsException(
             message=(
                 f"Too many OTP requests for this number. "
-                f"Please wait {settings.OTP_SEND_WINDOW_MINUTES} minutes "
-                f"before trying again."
+                f"Please try again in {retry_after} seconds."
             )
         )
 

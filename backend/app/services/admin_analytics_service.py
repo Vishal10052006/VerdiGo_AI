@@ -33,6 +33,20 @@ def get_overview(db: Session) -> dict:
     }
     state_dist = {state or "Unknown": count for state, count in repo.state_distribution(db)}
 
+    # ------------------------------------------------------------
+    # AI Cost/Token Visibility — new
+    # ------------------------------------------------------------
+    tokens_today = repo.tokens_used_since(
+        db, now.replace(hour=0, minute=0, second=0, microsecond=0)
+    )
+    tokens_7d = repo.tokens_used_since(db, now - timedelta(days=7))
+    tokens_total = repo.total_tokens_used(db)
+
+    provider_breakdown = [
+        {"provider": provider, "message_count": count, "tokens_used": tokens}
+        for provider, count, tokens in repo.token_usage_by_provider(db)
+    ]
+
     return {
         "total_farmers": total_farmers,
         "active_farmers": active_farmers,
@@ -45,6 +59,10 @@ def get_overview(db: Session) -> dict:
         "total_chat_messages": repo.count_chat_messages(db),
         "soil_type_distribution": soil_dist,
         "state_distribution": state_dist,
+        "tokens_used_today": tokens_today,
+        "tokens_used_last_7_days": tokens_7d,
+        "tokens_used_total": tokens_total,
+        "ai_provider_breakdown": provider_breakdown,
     }
 
 

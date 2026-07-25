@@ -102,6 +102,12 @@ class UpdateFarmerStatusRequest(BaseModel):
 # Analytics
 # ============================================================================
 
+class ProviderBreakdownItemSchema(BaseModel):
+    provider: str
+    message_count: int
+    tokens_used: int
+
+
 class AnalyticsOverviewSchema(BaseModel):
     total_farmers: int
     active_farmers: int
@@ -116,6 +122,12 @@ class AnalyticsOverviewSchema(BaseModel):
 
     soil_type_distribution: dict[str, int]
     state_distribution: dict[str, int]
+
+    # New — AI cost/usage visibility
+    tokens_used_today: int
+    tokens_used_last_7_days: int
+    tokens_used_total: int
+    ai_provider_breakdown: list[ProviderBreakdownItemSchema]
 
 
 class DailySignupPointSchema(BaseModel):

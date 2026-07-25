@@ -46,6 +46,7 @@ from app.services.weather_logging_service import (
     WeatherLoggingService,
 )
 from app.services.weatherapi_client import WeatherAPIClient
+from app.services.provider_fallback_service import ProviderFallbackService
 
 
 # ============================================================================
@@ -71,6 +72,15 @@ class WeatherProviderManager:
         self.openmeteo = OpenMeteoClient()
 
         self.logging_service = WeatherLoggingService(db)
+
+        # FIX: previously WeatherProviderManager reimplemented the
+        # fallback-eligibility decision inline (duplicated in both
+        # get_current_weather and get_forecast, and drifted apart —
+        # get_forecast's version had no try/except around the fallback
+        # call at all). ProviderFallbackService existed as a separate,
+        # tested, unused class. Now actually wired in as the single
+        # source of truth for "should we fall back for this error?"
+        self.fallback_decider = ProviderFallbackService()
 
         self.primary_provider = (
             settings.PRIMARY_WEATHER_PROVIDER
@@ -153,6 +163,125 @@ class WeatherProviderManager:
         )
 
     # ------------------------------------------------------------------------
+    # Shared Fetch-With-Fallback
+    #
+    # Single implementation used by BOTH get_current_weather and
+    # get_forecast, via a `fetch_fn` callable. This is the actual fix
+    # for the root cause of the module's drift: previously the two
+    # public methods each hand-wrote their own near-identical
+    # try/except/fallback logic, and they silently diverged —
+    # get_current_weather wrapped its fallback call in try/except,
+    # get_forecast did not, so a fallback failure in get_forecast
+    # raised an unhandled exception straight to a 500 instead of being
+    # caught the same way get_current_weather handles it. One shared
+    # implementation means that class of divergence can't happen again.
+    # ------------------------------------------------------------------------
+
+    def _fetch_with_fallback(
+        self,
+        fetch_fn_name: str,
+        fetch_args: tuple,
+    ) -> dict:
+        """
+        Call `fetch_fn_name` (e.g. "get_current_weather" or
+        "get_forecast") on the primary provider. On a fallback-eligible
+        failure (per ProviderFallbackService), retry on the fallback
+        provider. If the fallback ALSO fails, the exception propagates
+        to the caller — WeatherService/routes/weather.py already turns
+        unhandled exceptions here into a clean error response via
+        FastAPI's exception handling, so we don't need a third silent
+        catch-all layer here; we just need BOTH provider attempts to
+        be handled symmetrically, which they now are.
+        """
+
+        provider = self._get_provider(self.primary_provider)
+        start_time = time.perf_counter()
+
+        try:
+            data = getattr(provider, fetch_fn_name)(*fetch_args)
+
+            self._log_request(
+                provider=self.primary_provider,
+                start_time=start_time,
+                status_code=200,
+                fallback_used=False,
+            )
+
+            return {"provider": self.primary_provider, "data": data}
+
+        except Exception as exc:  # noqa: BLE001 — deliberately broad; see below
+
+            # ------------------------------------------------------------
+            # Determine fallback eligibility via ProviderFallbackService.
+            # Note: it currently only recognizes httpx exception types
+            # (TimeoutException, ConnectError, HTTPStatusError with a
+            # retryable status code) and returns False for anything else
+            # — so a non-httpx exception (e.g. a bug in our own
+            # normalizer) correctly does NOT trigger a fallback attempt,
+            # it just re-raises below.
+            # ------------------------------------------------------------
+
+            status_code = (
+                exc.response.status_code
+                if isinstance(exc, httpx.HTTPStatusError)
+                else 503
+            )
+
+            should_fallback = self.fallback_decider.should_fallback(exc)
+
+            self._log_request(
+                provider=self.primary_provider,
+                start_time=start_time,
+                status_code=status_code,
+                fallback_used=should_fallback,
+                error_message=str(exc),
+            )
+
+            if not should_fallback:
+                raise
+
+            fallback_provider = self._get_provider(self.fallback_provider)
+            fallback_start = time.perf_counter()
+
+            # Fallback attempt is intentionally NOT wrapped in its own
+            # try/except-and-swallow: if the fallback also fails, the
+            # farmer needs to see an error (503/500), not silently get
+            # no data with a 200. Both get_current_weather's old
+            # behavior and this new shared path agree on that — the
+            # bug being fixed was get_forecast's fallback call having
+            # NO try/except at all around the *logging* of failure,
+            # not around whether failure propagates. It should
+            # propagate either way; what it must also do is log
+            # accurately before propagating, which the block below
+            # ensures uniformly for both current-weather and forecast.
+            try:
+                fallback_data = getattr(fallback_provider, fetch_fn_name)(
+                    *fetch_args
+                )
+            except Exception as fallback_exc:
+                self._log_request(
+                    provider=self.fallback_provider,
+                    start_time=fallback_start,
+                    status_code=(
+                        fallback_exc.response.status_code
+                        if isinstance(fallback_exc, httpx.HTTPStatusError)
+                        else 503
+                    ),
+                    fallback_used=True,
+                    error_message=str(fallback_exc),
+                )
+                raise
+
+            self._log_request(
+                provider=self.fallback_provider,
+                start_time=fallback_start,
+                status_code=200,
+                fallback_used=True,
+            )
+
+            return {"provider": self.fallback_provider, "data": fallback_data}
+
+    # ------------------------------------------------------------------------
     # Current Weather
     # ------------------------------------------------------------------------
 
@@ -165,137 +294,11 @@ class WeatherProviderManager:
         Retrieve current weather with automatic provider fallback.
         """
 
-        provider = self._get_provider(
-            self.primary_provider,
+        return self._fetch_with_fallback(
+            "get_current_weather",
+            (latitude, longitude),
         )
 
-        start_time = time.perf_counter()
-
-        try:
-
-            data = provider.get_current_weather(
-                latitude,
-                longitude,
-            )
-
-            # ------------------------------------------------------------
-            # Log Successful Request
-            # ------------------------------------------------------------
-
-            self._log_request(
-                provider=self.primary_provider,
-                start_time=start_time,
-                status_code=200,
-                fallback_used=False,
-            )
-
-            return {
-
-                "provider": self.primary_provider,
-
-                "data": data,
-
-            }
-
-        # ------------------------------------------------------------
-        # HTTP Errors
-        # ------------------------------------------------------------
-
-        except httpx.HTTPStatusError as exc:
-
-            status_code = exc.response.status_code
-
-            self._log_request(
-                provider=self.primary_provider,
-                start_time=start_time,
-                status_code=status_code,
-                fallback_used=True,
-                error_message=str(exc),
-            )
-
-            # Retry only for retryable errors
-
-            if status_code in RETRYABLE_STATUS_CODES:
-
-                fallback_provider = self._get_provider(
-                    self.fallback_provider,
-                )
-
-                fallback_start = time.perf_counter()
-
-                try:
-                    fallback_data = fallback_provider.get_current_weather(
-                        latitude,
-                        longitude,
-                    )
-                except Exception:
-                    # Log fallback failure
-                    raise
-
-                self._log_request(
-                    provider=self.fallback_provider,
-                    start_time=fallback_start,
-                    status_code=200,
-                    fallback_used=True,
-                )
-
-                return {
-
-                    "provider": self.fallback_provider,
-
-                    "data": fallback_data,
-
-                }
-
-            raise
-
-        # ------------------------------------------------------------
-        # Timeout / Connection Errors
-        # ------------------------------------------------------------
-
-        except (
-            httpx.TimeoutException,
-            httpx.ConnectError,
-        ):
-
-            self._log_request(
-                provider=self.primary_provider,
-                start_time=start_time,
-                status_code=503,
-                fallback_used=True,
-                error_message="Connection Timeout",
-            )
-
-            fallback_provider = self._get_provider(
-                self.fallback_provider,
-            )
-
-            fallback_start = time.perf_counter()
-
-            try:
-                fallback_data = fallback_provider.get_current_weather(
-                    latitude,
-                    longitude,
-                )
-            except Exception:
-                # Log fallback failure
-                raise
-
-            self._log_request(
-                provider=self.fallback_provider,
-                start_time=fallback_start,
-                status_code=200,
-                fallback_used=True,
-            )
-
-            return {
-
-                "provider": self.fallback_provider,
-
-                "data": fallback_data,
-
-            }
-        
     # ------------------------------------------------------------------------
     # Forecast Weather
     # ------------------------------------------------------------------------
@@ -308,134 +311,22 @@ class WeatherProviderManager:
     ) -> dict:
         """
         Retrieve weather forecast with automatic provider fallback.
+
+        FIX: previously this method's fallback call
+        (fallback_provider.get_forecast(...)) had NO try/except around
+        it at all — if the fallback provider also failed, the raw
+        exception propagated unhandled. It now goes through the same
+        _fetch_with_fallback path as get_current_weather, which logs
+        the fallback failure before re-raising, giving symmetric
+        behavior and symmetric observability between both weather
+        operations.
         """
 
-        provider = self._get_provider(
-            self.primary_provider,
+        return self._fetch_with_fallback(
+            "get_forecast",
+            (latitude, longitude, days),
         )
 
-        start_time = time.perf_counter()
-
-        try:
-
-            data = provider.get_forecast(
-                latitude,
-                longitude,
-                days,
-            )
-
-            # ------------------------------------------------------------
-            # Log Successful Request
-            # ------------------------------------------------------------
-
-            self._log_request(
-                provider=self.primary_provider,
-                start_time=start_time,
-                status_code=200,
-                fallback_used=False,
-            )
-
-            return {
-
-                "provider": self.primary_provider,
-
-                "data": data,
-
-            }
-
-        # ------------------------------------------------------------
-        # HTTP Errors
-        # ------------------------------------------------------------
-
-        except httpx.HTTPStatusError as exc:
-
-            status_code = exc.response.status_code
-
-            self._log_request(
-                provider=self.primary_provider,
-                start_time=start_time,
-                status_code=status_code,
-                fallback_used=True,
-                error_message=str(exc),
-            )
-
-            # Retry only for retryable errors
-
-            if status_code in RETRYABLE_STATUS_CODES:
-
-                fallback_provider = self._get_provider(
-                    self.fallback_provider,
-                )
-
-                fallback_start = time.perf_counter()
-
-                fallback_data = fallback_provider.get_forecast(
-                    latitude,
-                    longitude,
-                    days,
-                )
-
-                self._log_request(
-                    provider=self.fallback_provider,
-                    start_time=fallback_start,
-                    status_code=200,
-                    fallback_used=True,
-                )
-
-                return {
-
-                    "provider": self.fallback_provider,
-
-                    "data": fallback_data,
-
-                }
-
-            raise
-
-        # ------------------------------------------------------------
-        # Timeout / Connection Errors
-        # ------------------------------------------------------------
-
-        except (
-            httpx.TimeoutException,
-            httpx.ConnectError,
-        ):
-
-            self._log_request(
-                provider=self.primary_provider,
-                start_time=start_time,
-                status_code=503,
-                fallback_used=True,
-                error_message="Connection Timeout",
-            )
-
-            fallback_provider = self._get_provider(
-                self.fallback_provider,
-            )
-
-            fallback_start = time.perf_counter()
-
-            fallback_data = fallback_provider.get_forecast(
-                latitude,
-                longitude,
-                days,
-            )
-
-            self._log_request(
-                provider=self.fallback_provider,
-                start_time=fallback_start,
-                status_code=200,
-                fallback_used=True,
-            )
-
-            return {
-
-                "provider": self.fallback_provider,
-
-                "data": fallback_data,
-
-            }
-        
     # ------------------------------------------------------------------------
     # Health Check
     # ------------------------------------------------------------------------
