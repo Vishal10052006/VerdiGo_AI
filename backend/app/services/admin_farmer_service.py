@@ -38,6 +38,14 @@ def list_farmers(
         is_active=is_active,
     )
 
+    # Rows for users without a FarmerProfile (outerjoin) come back with
+    # None for profile-derived fields. Normalize here rather than
+    # loosening the schema, so downstream consumers of
+    # FarmerListItemSchema keep a guaranteed bool/int contract.
+    for row in rows:
+        row["profile_completed"] = bool(row["profile_completed"])
+        row["total_farms"] = int(row["total_farms"] or 0)
+
     return {"farmers": rows, "total": total, "page": page, "page_size": page_size}
 
 

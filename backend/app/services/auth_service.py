@@ -112,9 +112,18 @@ def verify_otp(db: Session, mobile: str, otp: str) -> dict:
     user = register_user(db=db, mobile=mobile)
 
     # ------------------------------------------------------------
+    # Block Deactivated Accounts
+    # ------------------------------------------------------------
+    # Must happen AFTER OTP is marked used (don't let a deactivated
+    # user retry the same OTP) but BEFORE any token is minted.
+    if not user.is_active:
+        raise UnauthorizedException(
+            message="This account has been deactivated. Please contact support."
+        )
+
+    # ------------------------------------------------------------
     # Issue Tokens (now carrying jti)
     # ------------------------------------------------------------
-
     access_token, _access_jti, _access_exp = jwt_service.create_access_token(
         str(user.id)
     )

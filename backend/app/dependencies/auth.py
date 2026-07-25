@@ -87,6 +87,9 @@ def get_current_user(
     if user is None:
         raise UnauthorizedException()
 
+    if not user.is_active:
+        raise UnauthorizedException(message="This account has been deactivated.")
+
     return user
 
 
