@@ -10,6 +10,7 @@ Responsibilities:
 - Expose root endpoint
 """
 
+import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.config.settings import settings
@@ -65,7 +66,9 @@ app = FastAPI(
 # ============================================================================
 
 origins = [
-    "http://localhost:3000",
+    origin.strip()
+    for origin in settings.ALLOWED_ORIGINS.split(",")
+    if origin.strip()
 ]
 
 app.add_middleware(
@@ -103,6 +106,10 @@ app.include_router(admin_analytics_router)
 # Example:
 # http://127.0.0.1:8000/uploads/profile/image.jpg
 # =====================================================
+
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+os.makedirs(os.path.join(settings.UPLOAD_DIR, "profile"), exist_ok=True)
+os.makedirs(os.path.join(settings.UPLOAD_DIR, "disease"), exist_ok=True)
 
 app.mount(
     "/uploads",
