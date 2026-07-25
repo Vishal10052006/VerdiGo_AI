@@ -1,4 +1,3 @@
-# backend/app/services/admin_farmer_service.py
 """
 Admin Farmer Management Service
 

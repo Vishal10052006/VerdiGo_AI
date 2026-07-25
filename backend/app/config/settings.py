@@ -29,6 +29,14 @@ class Settings(BaseSettings):
     OTP_LENGTH: int
     OTP_EXPIRE_MINUTES: int
     OTP_MAX_ATTEMPTS: int
+
+    # Rate limit on /auth/send-otp itself — prevents SMS-bombing a
+    # phone number or exhausting SMS provider budget. This was a
+    # gap flagged in the Module 1 security review: OTP verification
+    # was rate-limited (OTP_MAX_ATTEMPTS) but *sending* an OTP was not.
+    OTP_SEND_MAX_REQUESTS: int = 3
+    OTP_SEND_WINDOW_MINUTES: int = 10
+
     SMS_PROVIDER_URL: str = ""
     SMS_PROVIDER_API_KEY: str = ""
     SMS_SENDER_ID: str = ""
@@ -61,7 +69,7 @@ class Settings(BaseSettings):
     AI_REQUEST_TIMEOUT: int = 15
     AI_DAILY_MESSAGE_LIMIT: int = 100  # per-farmer rate limit — cost control
     AI_DAILY_VISION_LIMIT: int = 20
-    
+
 
     # =========================
     # Disease Detection (AI Vision)
@@ -73,7 +81,7 @@ class Settings(BaseSettings):
     # CORS
     # =========================
     ALLOWED_ORIGINS: str
-    
+
     # ===========================
     # File Upload
     # ===========================

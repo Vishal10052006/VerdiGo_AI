@@ -55,6 +55,15 @@ class ChatService:
         if farmer_profile is None:
             raise NotFoundException(message="Farmer profile not found.")
 
+        # ------------------------------------------------------------
+        # Rate Limit Check (cost control — before any AI spend)
+        # ------------------------------------------------------------
+        # NOTE: previously this increment ran TWICE (once here, once
+        # again further down with an identical block) — every message
+        # silently counted as 2 against AI_DAILY_MESSAGE_LIMIT, cutting
+        # the real per-farmer daily allowance in half without anyone
+        # noticing, since no test exercised the exact boundary value
+        # until now. Fixed: single increment, single check.
         current_count = chat_rate_limit_repository.increment_and_get_count(
             db=self.db,
             farmer_profile_id=farmer_profile.id,
@@ -70,24 +79,6 @@ class ChatService:
             )
 
         farm = farm_repository.get_by_farmer_profile_id(self.db, farmer_profile.id)
-
-
-        # ------------------------------------------------------------
-        # Rate Limit Check (cost control — before any AI spend)
-        # ------------------------------------------------------------
-        current_count = chat_rate_limit_repository.increment_and_get_count(
-            db=self.db,
-            farmer_profile_id=farmer_profile.id,
-        )
-
-        if current_count > settings.AI_DAILY_MESSAGE_LIMIT:
-            raise TooManyRequestsException(
-                message=(
-                    f"You've reached today's limit of "
-                    f"{settings.AI_DAILY_MESSAGE_LIMIT} messages. "
-                    f"Please try again tomorrow."
-                )
-            )
 
         # ------------------------------------------------------------
         # Get or Create Conversation (scoped to this farmer only)

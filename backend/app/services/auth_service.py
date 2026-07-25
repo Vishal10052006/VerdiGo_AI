@@ -9,6 +9,7 @@ from app.config.settings import settings
 from app.models.user import User
 from app.repositories import (
     otp_repository,
+    otp_rate_limit_repository,
     user_repository,
     revocation_repository,
 )
@@ -18,6 +19,7 @@ from app.services import (
 )
 from app.core.exceptions import (
     BadRequestException,
+    TooManyRequestsException,
     UnauthorizedException,
 )
 
@@ -26,6 +28,11 @@ logger = logging.getLogger(__name__)
 
 def send_otp_sms(mobile: str, otp: str) -> None:
 
+    # TODO(Phase 2): this is a blocking urllib.request call inside the
+    # request path with no retry/circuit-breaker beyond a 5s timeout.
+    # Fine at MVP volume; move to a background task/queue (e.g. Celery,
+    # or an async httpx client) once SMS volume or provider latency
+    # becomes a bottleneck. Flagged in the Module 1 review.
     if not settings.SMS_PROVIDER_URL:
         if settings.DEBUG:
             logger.info("OTP for %s: %s", mobile, otp)
@@ -77,6 +84,31 @@ def register_user(db: Session, mobile: str) -> User:
 
 
 def login_user(db: Session, mobile: str) -> dict:
+    """
+    Send an OTP to `mobile`.
+
+    Rate limited BEFORE any OTP is generated or sent — this closes
+    the gap flagged in the Module 1 security review, where
+    /auth/send-otp had no request-level limit and could be used to
+    SMS-bomb a number or exhaust SMS provider budget. OTP_MAX_ATTEMPTS
+    only limited *verify* attempts, not *send* attempts.
+    """
+
+    allowed, _current_count = otp_rate_limit_repository.check_and_increment(
+        db=db,
+        mobile=mobile,
+        window_minutes=settings.OTP_SEND_WINDOW_MINUTES,
+        max_requests=settings.OTP_SEND_MAX_REQUESTS,
+    )
+
+    if not allowed:
+        raise TooManyRequestsException(
+            message=(
+                f"Too many OTP requests for this number. "
+                f"Please wait {settings.OTP_SEND_WINDOW_MINUTES} minutes "
+                f"before trying again."
+            )
+        )
 
     otp = otp_service.generate_otp()
 

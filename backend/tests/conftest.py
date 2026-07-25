@@ -148,10 +148,66 @@ def mock_gemini_vision(monkeypatch):
     )
 
 
+FAKE_WEATHER_DATA = {
+    "temperature": 28.0,
+    "feels_like": 29.0,
+    "humidity": 60,
+    "wind_speed": 10.0,
+    "pressure": 1012.0,
+    "visibility": 10.0,
+    "uv_index": 5.0,
+    "rainfall": 0.0,
+    "condition": "Clear Sky",
+    "provider": "weatherapi",
+    "fetched_at": "2026-07-25T10:00:00Z",
+}
+
+
+@pytest.fixture(autouse=True)
+def mock_weather_provider(monkeypatch):
+    """
+    Stub WeatherService.get_current_weather so tests never make a
+    real network call to WeatherAPI/Open-Meteo.
+
+    Mocked at the WeatherService layer (not WeatherProviderManager)
+    because that's where the ALREADY-NORMALIZED response shape lives
+    — mocking one layer lower would return raw provider JSON that
+    WeatherNormalizer expects a different shape for, causing a
+    KeyError instead of a clean stub. This mirrors the pattern
+    test_notifications.py already uses for the same reason.
+
+    Previously test_weather_authenticated.py::test_get_current_weather
+    made a genuine external HTTP request using the placeholder
+    WEATHERAPI_API_KEY=test-key from .env.test, which WeatherAPI
+    correctly rejects with 401. This "passed" in the past only by
+    coincidence (e.g. a stale cached row in weather_cache from an
+    earlier run with a real key) — not because it was actually
+    isolated. Mocking here matches the same "never hit real external
+    APIs in tests" principle already applied to mock_ai_provider and
+    mock_gemini_vision above.
+    """
+    def _fake_get_current_weather(self, farm_id, latitude, longitude):
+        return dict(FAKE_WEATHER_DATA)
+
+    monkeypatch.setattr(
+        "app.services.weather_service.WeatherService.get_current_weather",
+        _fake_get_current_weather,
+    )
+
+
 @pytest.fixture(autouse=True)
 def _reset_daily_rate_limits():
     """
-    Reset per-farmer daily usage counters before every test.
+    Reset per-farmer daily usage counters, AND the OTP-send rate
+    limiter, before every test.
+
+    otp_rate_limits is included here (not just chat/feature limits)
+    because auth_headers calls /auth/login for the same mobile
+    number in nearly every test file — without a reset, tests would
+    eventually trip the new OTP send rate limit even with a high
+    .env.test ceiling, and dedicated rate-limit tests that monkeypatch
+    a LOW limit would leak state into unrelated tests that run after
+    them in the same session.
 
     Autouse so no test file has to remember to request it — matches the
     pattern already used by mock_ai_provider / mock_gemini_vision above.
@@ -160,6 +216,7 @@ def _reset_daily_rate_limits():
     try:
         db.execute(text("DELETE FROM feature_rate_limits"))
         db.execute(text("DELETE FROM chat_rate_limits"))
+        db.execute(text("DELETE FROM otp_rate_limits"))
         db.commit()
     finally:
         db.close()

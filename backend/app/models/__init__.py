@@ -9,6 +9,7 @@ migration autogeneration.
 
 from .user import User
 from .otp import OTP
+from .otp_rate_limit import OTPRateLimit
 from .farmer_profile import FarmerProfile
 from .farm import Farm
 
@@ -18,9 +19,6 @@ from .weather_provider_request_log import WeatherProviderRequestLog
 
 from .refresh_token import RefreshToken
 from .token_blacklist import TokenBlacklist
-
-from .crop import Crop
-from .crop_recommendation import CropRecommendation, CropRecommendationItem
 
 from .crop import Crop
 from .crop_recommendation import CropRecommendation, CropRecommendationItem
