@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { redirectAfterLogin } from "@/lib/postLogin";
 
 import {
   verifyOTP,
@@ -119,9 +120,9 @@ export default function OTPVerification({
       );
 
       /**
-       * Navigate to dashboard.
+       * Navigate based on profile completion status.
        */
-      router.push("/dashboard");
+      await redirectAfterLogin(router);
 
     } catch (error) {
       console.error(error);
