@@ -48,7 +48,7 @@ class FarmerListItemSchema(BaseModel):
     user_id: UUID
     farmer_profile_id: UUID | None = None
     full_name: str | None = None
-    mobile: str
+    mobile: str | None = None
     state: str | None = None
     district: str | None = None
     total_farms: int
@@ -79,7 +79,7 @@ class FarmerDetailFarmSchema(BaseModel):
 
 class FarmerDetailSchema(BaseModel):
     user_id: UUID
-    mobile: str
+    mobile: str | None = None
     email: str | None = None
     is_active: bool
     created_at: datetime

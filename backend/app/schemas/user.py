@@ -87,7 +87,7 @@ class UserPublicResponse(BaseModel):
 
     id: UUID
 
-    mobile: str
+    mobile: Optional[str] = None
 
     email: Optional[str] = None
 
