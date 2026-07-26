@@ -1,6 +1,7 @@
 "use client";
 
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import AuthenticatedLayout from "@/layouts/AuthenticatedLayout";
 import Greeting from "@/components/dashboard/Greeting";
 import SummaryCards from "@/components/dashboard/SummaryCards";
 import WeatherCard from "@/components/dashboard/WeatherCard";
@@ -19,7 +20,9 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <DashboardSkeleton />
+        <AuthenticatedLayout>
+          <DashboardSkeleton />
+        </AuthenticatedLayout>
       </ProtectedRoute>
     );
   }
@@ -27,21 +30,23 @@ export default function DashboardPage() {
   if (error || !dashboard) {
     return (
       <ProtectedRoute>
-        <main className="flex min-h-screen items-center justify-center bg-slate-50">
-          <ErrorState
-            title="Unable to load dashboard"
-            description={error ?? "Something went wrong. Please try again."}
-            actionLabel="Retry"
-            onAction={refetch}
-          />
-        </main>
+        <AuthenticatedLayout>
+          <div className="flex min-h-full items-center justify-center">
+            <ErrorState
+              title="Unable to load dashboard"
+              description={error ?? "Something went wrong. Please try again."}
+              actionLabel="Retry"
+              onAction={refetch}
+            />
+          </div>
+        </AuthenticatedLayout>
       </ProtectedRoute>
     );
   }
 
   return (
     <ProtectedRoute>
-      <main className="min-h-screen bg-slate-50">
+      <AuthenticatedLayout>
         <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
           <section className="mb-10">
             <h1 className="text-4xl font-bold tracking-tight text-slate-900">
@@ -92,7 +97,7 @@ export default function DashboardPage() {
           <QuickActions />
           <RecentActivity />
         </div>
-      </main>
+      </AuthenticatedLayout>
     </ProtectedRoute>
   );
 }

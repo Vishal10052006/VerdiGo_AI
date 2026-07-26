@@ -6,6 +6,10 @@
  * Main chat interface: message list, composer, and status states
  * (sending, error, rate-limited).
  *
+ * Supports two size variants:
+ * - "page"     -> full-height, used by the standalone /assistant route
+ * - "floating" -> compact, used inside FloatingChatWidget's popup panel
+ *
  * Module:
  * Phase 1 → Module 7 → AI Chat Assistant
  * ============================================================================
@@ -20,7 +24,11 @@ import { useChat } from "@/hooks/useChat";
 import { cn } from "@/lib/utils";
 import ChatBubble from "./ChatBubble";
 
-export default function ChatWindow() {
+interface ChatWindowProps {
+  variant?: "page" | "floating";
+}
+
+export default function ChatWindow({ variant = "page" }: ChatWindowProps) {
   const {
     messages,
     sending,
@@ -48,11 +56,21 @@ export default function ChatWindow() {
     await sendMessage(text);
   };
 
+  const isFloating = variant === "floating";
+
   return (
-    <div className="flex h-[calc(100vh-6rem)] flex-col rounded-3xl border bg-white shadow-sm">
+    <div
+      className={cn(
+        "flex flex-col rounded-3xl border bg-white shadow-sm",
+        isFloating ? "h-full" : "h-[calc(100vh-6rem)]"
+      )}
+    >
       {/* Header */}
-      <div className="flex items-center gap-3 border-b px-6 py-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
+      <div className={cn(
+        "flex items-center gap-3 border-b px-6 py-4",
+        isFloating && "px-4 py-3"
+      )}>
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-100">
           <Bot className="h-5 w-5 text-emerald-600" />
         </div>
         <div>
@@ -64,7 +82,10 @@ export default function ChatWindow() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
+      <div className={cn(
+        "flex-1 space-y-4 overflow-y-auto px-6 py-6",
+        isFloating && "px-4 py-4"
+      )}>
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-center text-slate-400">
             <Bot className="mb-3 h-10 w-10" />
@@ -93,6 +114,7 @@ export default function ChatWindow() {
         <div
           className={cn(
             "mx-6 mb-3 flex items-center gap-2 rounded-xl px-4 py-2 text-sm",
+            isFloating && "mx-4",
             rateLimited
               ? "bg-amber-50 text-amber-700"
               : "bg-red-50 text-red-600"
@@ -106,7 +128,10 @@ export default function ChatWindow() {
       {/* Composer */}
       <form
         onSubmit={handleSubmit}
-        className="flex items-center gap-3 border-t px-6 py-4"
+        className={cn(
+          "flex items-center gap-3 border-t px-6 py-4",
+          isFloating && "px-4 py-3"
+        )}
       >
         <input
           type="text"
@@ -125,7 +150,7 @@ export default function ChatWindow() {
         <button
           type="submit"
           disabled={!input.trim() || sending || rateLimited}
-          className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Send className="h-4 w-4" />
         </button>

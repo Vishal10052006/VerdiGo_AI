@@ -11,6 +11,8 @@ import { useDiseaseDetection } from "@/hooks/useDiseaseDetection";
 import { getFarm } from "@/services/farm.service";
 import { Bug } from "lucide-react";
 
+import AuthenticatedLayout from "@/layouts/AuthenticatedLayout"
+
 export default function DiseaseDetectionPage() {
   const [farmId, setFarmId] = useState<string | null>(null);
   const { result, analyzing, error, analyze } = useDiseaseDetection();
@@ -23,36 +25,38 @@ export default function DiseaseDetectionPage() {
 
   return (
     <ProtectedRoute>
-      <main className="min-h-screen bg-slate-50">
-        <PageHeader
-          title="Disease Detection"
-          description="Upload a crop photo for instant AI diagnosis"
-          icon={<Bug className="h-6 w-6" />}
-        />
+      <AuthenticatedLayout>
+        <div className="min-h-full">
+          <PageHeader
+            title="Disease Detection"
+            description="Upload a crop photo for instant AI diagnosis"
+            icon={<Bug className="h-6 w-6" />}
+          />
 
-        <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-          {!farmId ? (
-            <EmptyState
-              title="No farm registered yet"
-              description="Register a farm before using disease detection."
-              icon={<Bug className="h-10 w-10" />}
-            />
-          ) : (
-            <>
-              <DiseaseUpload
-                analyzing={analyzing}
-                onSelect={(file) => analyze(farmId, file)}
+          <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+            {!farmId ? (
+              <EmptyState
+                title="No farm registered yet"
+                description="Register a farm before using disease detection."
+                icon={<Bug className="h-10 w-10" />}
               />
+            ) : (
+              <>
+                <DiseaseUpload
+                  analyzing={analyzing}
+                  onSelect={(file) => analyze(farmId, file)}
+                />
 
-              {error && (
-                <ErrorState title="Analysis failed" description={error} />
-              )}
+                {error && (
+                  <ErrorState title="Analysis failed" description={error} />
+                )}
 
-              {result && <DiseaseResultCard result={result} />}
-            </>
-          )}
+                {result && <DiseaseResultCard result={result} />}
+              </>
+            )}
+          </div>
         </div>
-      </main>
+      </AuthenticatedLayout>
     </ProtectedRoute>
   );
 }

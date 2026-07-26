@@ -6,11 +6,10 @@ import { useState } from "react";
 
 import {
     LayoutDashboard,
-    Users,
     Sprout,
     CloudSun,
-    Bot,
-    ShoppingBag,
+    Bug,
+    Wheat,
     Settings,
     LogOut,
 } from "lucide-react";
@@ -18,14 +17,21 @@ import {
 import { cn } from "@/lib/utils";
 import { logout } from "@/services/auth.service";
 
+// ============================================================================
+// Navigation — every entry here MUST correspond to a real page route.
+// Previously included /farmers and /marketplace, which had no matching
+// page files and were dead links. /assistant removed from here entirely —
+// AI Assistant is now a floating widget (FloatingChatWidget.tsx) mounted
+// globally in AuthenticatedLayout, not a page you navigate to.
+// ============================================================================
+
 const navigation = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Farmers", href: "/farmers", icon: Users },
-    { label: "Farms", href: "/farms", icon: Sprout },
+    { label: "Crop Recommendation", href: "/crop-recommendation", icon: Wheat },
+    { label: "Disease Detection", href: "/disease-detection", icon: Bug },
     { label: "Weather", href: "/weather", icon: CloudSun },
-    { label: "AI Assistant", href: "/assistant", icon: Bot },
-    { label: "Marketplace", href: "/marketplace", icon: ShoppingBag },
-    { label: "Settings", href: "/settings", icon: Settings },
+    // { label: "Settings", href: "/settings", icon: Settings },
+    // ^ uncomment once /settings page exists — currently no matching route
 ];
 
 export default function Sidebar() {
@@ -46,16 +52,17 @@ export default function Sidebar() {
     };
 
     return (
-        <aside className="flex h-screen w-72 flex-col border-r shadow-sm bg-white">
+        <aside className="flex h-screen w-64 flex-shrink-0 flex-col border-r shadow-sm bg-white">
             <div className="border-b px-6 py-5">
                 <Link href="/" className="text-2xl font-bold text-green-600">
                     VerdiGO AI
                 </Link>
             </div>
 
-            <nav className="flex-1 space-y-3 p-4">
+            <nav className="flex-1 space-y-2 p-4">
                 {navigation.map((item) => {
                     const Icon = item.icon;
+                    const active = pathname === item.href;
 
                     return (
                         <Link
@@ -63,7 +70,7 @@ export default function Sidebar() {
                             href={item.href}
                             className={cn(
                                 "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200",
-                                pathname === item.href
+                                active
                                     ? "bg-green-600 text-white shadow-sm"
                                     : "text-gray-600 hover:bg-green-50 hover:text-green-700"
                             )}

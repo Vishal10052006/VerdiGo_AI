@@ -9,36 +9,40 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import AuthenticatedLayout from "@/layouts/AuthenticatedLayout"
+
 export default function NotificationsPage() {
   const { notifications, unreadCount, loading, markRead, markAllRead } = useNotifications();
 
   return (
     <ProtectedRoute>
-      <main className="min-h-screen bg-slate-50">
-        <PageHeader
-          title="Notifications"
-          description={`${unreadCount} unread`}
-          icon={<Bell className="h-6 w-6" />}
-          actionLabel={unreadCount > 0 ? "Mark all read" : undefined}
-          onAction={markAllRead}
-        />
+      <AuthenticatedLayout>
+        <div className="min-h-full">
+          <PageHeader
+            title="Notifications"
+            description={`${unreadCount} unread`}
+            icon={<Bell className="h-6 w-6" />}
+            actionLabel={unreadCount > 0 ? "Mark all read" : undefined}
+            onAction={markAllRead}
+          />
 
-        <div className="mx-auto max-w-3xl space-y-3 px-4 py-6 sm:px-6 lg:px-8">
-          {loading ? (
-            <LoadingSkeleton variant="list" />
-          ) : notifications.length === 0 ? (
-            <EmptyState
-              title="No notifications yet"
-              description="Weather and disease alerts for your farm will appear here."
-              icon={<Bell className="h-10 w-10" />}
-            />
-          ) : (
-            notifications.map((n) => (
-              <AlertCard key={n.id} notification={n} onMarkRead={markRead} />
-            ))
-          )}
+          <div className="mx-auto max-w-3xl space-y-3 px-4 py-6 sm:px-6 lg:px-8">
+            {loading ? (
+              <LoadingSkeleton variant="list" />
+            ) : notifications.length === 0 ? (
+              <EmptyState
+                title="No notifications yet"
+                description="Weather and disease alerts for your farm will appear here."
+                icon={<Bell className="h-10 w-10" />}
+              />
+            ) : (
+              notifications.map((n) => (
+                <AlertCard key={n.id} notification={n} onMarkRead={markRead} />
+              ))
+            )}
+          </div>
         </div>
-      </main>
+      </AuthenticatedLayout>
     </ProtectedRoute>
   );
 }
