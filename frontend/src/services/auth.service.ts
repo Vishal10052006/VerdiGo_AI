@@ -53,3 +53,7 @@ export const getMe = async () => {
   const response = await api.get("/auth/me");
   return response.data;
 };
+export const googleLogin = async (idToken: string) => {
+  const response = await api.post("/auth/google", { id_token: idToken });
+  return response.data;
+};
