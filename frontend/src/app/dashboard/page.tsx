@@ -13,6 +13,7 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { motion } from "framer-motion";
 
 import { useDashboard } from "@/hooks/useDashboard";
+import { CloudSun } from "lucide-react";
 
 export default function DashboardPage() {
   const { dashboard, loading, error, refetch } = useDashboard();
@@ -73,14 +74,21 @@ export default function DashboardPage() {
           />
 
           <section className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <WeatherCard
-              temperature={dashboard.weather.temperature}
-              humidity={dashboard.weather.humidity}
-              windSpeed={dashboard.weather.wind_speed}
-              rainfall={dashboard.weather.rainfall}
-              condition={dashboard.weather.condition}
-              provider={dashboard.weather.provider}
-            />
+            {dashboard.weather ? (
+              <WeatherCard
+                temperature={dashboard.weather.temperature}
+                humidity={dashboard.weather.humidity}
+                windSpeed={dashboard.weather.wind_speed}
+                rainfall={dashboard.weather.rainfall}
+                condition={dashboard.weather.condition}
+                provider={dashboard.weather.provider}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-3xl border bg-white p-6 text-center text-slate-400 shadow-sm">
+                <CloudSun className="mb-3 h-10 w-10" />
+                <p className="text-sm">Weather data is currently unavailable for your farm.</p>
+              </div>
+            )}
 
             <FarmSummaryCard
               farmName={dashboard.primary_farm.farm_name}
