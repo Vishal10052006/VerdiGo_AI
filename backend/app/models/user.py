@@ -31,8 +31,7 @@ class User(Base):
     # =========================
     mobile = Column(
         String(20),
-        unique=True,
-        nullable=False,
+        nullable=True,
         index=True
     )
 
@@ -40,6 +39,13 @@ class User(Base):
         String(255),
         unique=True,
         nullable=True
+    )
+
+    google_id = Column(
+        String(255),
+        unique=True,
+        nullable=True,
+        index=True,
     )
 
     auth_provider = Column(

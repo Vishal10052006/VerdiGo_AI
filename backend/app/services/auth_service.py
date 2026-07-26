@@ -240,3 +240,64 @@ def logout_user(
         "message": "Logged out successfully",
         "data": {},
     }
+
+def login_or_register_with_google(db: Session, id_token: str) -> dict:
+    """
+    Find-or-create a User from a verified Google identity, then issue
+    the SAME access/refresh JWT pair as OTP login — Google login is
+    just a second way to obtain these tokens, not a parallel session
+    system. Everything downstream (revocation, auto-refresh, /auth/me)
+    works identically regardless of which method the user signed in with.
+    """
+    from app.services.google_auth_service import verify_google_id_token
+
+    claims = verify_google_id_token(id_token)
+
+    google_id = claims["sub"]
+    email = claims["email"]
+    full_name = claims.get("name")
+    picture = claims.get("picture")
+
+    user = db.query(User).filter(User.google_id == google_id).first()
+
+    if user is None:
+        user = db.query(User).filter(User.email == email).first()
+        if user is not None:
+            user.google_id = google_id
+
+    if user is None:
+        user = User(
+            email=email,
+            google_id=google_id,
+            mobile=None,
+            auth_provider="google",
+            profile_image_url=picture,
+            is_verified=True,
+            is_active=True,
+        )
+        db.add(user)
+
+    db.commit()
+    db.refresh(user)
+
+    if not user.is_active:
+        raise UnauthorizedException(
+            message="This account has been deactivated. Please contact support."
+        )
+
+    access_token, _access_jti, _access_exp = jwt_service.create_access_token(str(user.id))
+    refresh_token, refresh_jti, refresh_exp = jwt_service.create_refresh_token(str(user.id))
+
+    revocation_repository.store_refresh_token(
+        db=db,
+        user_id=user.id,
+        jti=refresh_jti,
+        expires_at=refresh_exp,
+    )
+
+    return {
+        "success": True,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "user": user,
+    }

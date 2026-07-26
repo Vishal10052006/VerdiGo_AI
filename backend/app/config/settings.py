@@ -99,6 +99,11 @@ class Settings(BaseSettings):
         ".webp",
     )
 
+    # =========================
+    # Google OAuth
+    # =========================
+    GOOGLE_OAUTH_CLIENT_ID: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",

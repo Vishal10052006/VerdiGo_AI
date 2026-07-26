@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 
 from app.schemas.auth import (
+    GoogleLoginRequest,
     SendOTPRequest,
     VerifyOTPRequest,
     LoginRequest,
@@ -29,6 +30,7 @@ from app.services.auth_service import (
     verify_otp,
     logout_user,
     refresh_access_token,
+    login_or_register_with_google,
 )
 
 
@@ -70,6 +72,11 @@ def logout(
         access_token_payload=access_payload,
         refresh_token=request.refresh_token,
     )
+
+
+@router.post("/google", response_model=LoginResponse)
+def google_login(request: GoogleLoginRequest, db: Session = Depends(get_db)):
+    return login_or_register_with_google(db=db, id_token=request.id_token)
 
 
 @router.post("/refresh", response_model=RefreshResponse)
