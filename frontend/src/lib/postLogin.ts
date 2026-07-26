@@ -3,30 +3,34 @@
  * Post-Login Routing
  * ============================================================================
  *
- * Decides where to send a user immediately after authentication
- * (OTP or Google) succeeds and tokens are already stored.
+ * After ANY successful login (OTP or Google), decide where the user
+ * should land: /dashboard if they already have a farmer profile,
+ * /onboarding if this is their first time (no profile yet).
  *
- * New accounts (no FarmerProfile row yet) go to /onboarding.
- * Existing accounts go straight to /dashboard.
- * ============================================================================
+ * Centralized here so OTP login and Google login can't drift apart
+ * on this logic again.
  */
 
-import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import api from "@/lib/api";
+import { AxiosError } from "axios";
+import { getFarmerProfile } from "@/services/farmer.service";
 
-export const redirectAfterLogin = async (router: AppRouterInstance) => {
+export const routeAfterLogin = async (
+  router: { push: (path: string) => void }
+) => {
   try {
-    await api.get("/farmer/profile");
+    await getFarmerProfile();
     router.push("/dashboard");
-  } catch (error: any) {
-    if (error?.response?.status === 404) {
+  } catch (error) {
+    const axiosError = error as AxiosError;
+
+    if (axiosError.response?.status === 404) {
       router.push("/onboarding");
       return;
     }
 
-    // Any other error (network blip, 500, etc.) — don't block login,
-    // let the dashboard's own error state handle it with a Retry button.
-    console.error("Profile check failed, defaulting to dashboard:", error);
+    // Any other error (network, 500, etc.) — don't block the user,
+    // let them into the dashboard where the existing error state
+    // (ErrorState + Retry) already handles failures gracefully.
     router.push("/dashboard");
   }
 };

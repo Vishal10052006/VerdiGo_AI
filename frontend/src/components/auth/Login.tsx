@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import PhoneInput from "./PhoneInput";
 import OTPVerification from "./OTPVerification";
 import { googleLogin } from "@/services/auth.service";
-import { redirectAfterLogin } from "@/lib/postLogin";
+import { routeAfterLogin } from "@/lib/postLogin";
 
 export default function Login() {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function Login() {
       localStorage.setItem("refresh_token", response.refresh_token);
       localStorage.setItem("user", JSON.stringify(response.user));
 
-      await redirectAfterLogin(router);
+      await routeAfterLogin(router);
     } catch (error) {
       console.error("Google login error:", error);
       toast.error("Unable to sign in with Google. Please try again.");
