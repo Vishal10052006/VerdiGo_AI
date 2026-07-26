@@ -46,7 +46,7 @@ class FarmerInfoSchema(BaseModel):
     id: UUID
     full_name: str
     profile_image_url: str | None = None
-    mobile: str
+    mobile: str | None = None
     village: str
     district: str
     state: str
