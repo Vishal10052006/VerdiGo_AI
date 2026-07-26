@@ -55,7 +55,7 @@ class UserResponse(BaseModel):
 
     id: UUID
 
-    mobile: str
+    mobile: Optional[str] = None
     email: Optional[str] = None
 
     profile_image_url: Optional[str] = None
