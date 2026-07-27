@@ -77,6 +77,8 @@ class Settings(BaseSettings):
     DISEASE_UPLOAD_DIR: str = "uploads/disease"
     GEMINI_VISION_MODEL: str = "gemini-2.0-flash"  # multimodal — reuse existing GEMINI_API_KEY
 
+    GROQ_VISION_MODEL: str = "qwen/qwen3.6-27b"
+
     # =========================
     # CORS
     # =========================

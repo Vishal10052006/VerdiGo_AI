@@ -143,7 +143,7 @@ def mock_gemini_vision(monkeypatch):
         return {"result": dict(FAKE_VISION_RESULT), "tokens": 120}
 
     monkeypatch.setattr(
-        "app.services.ai.gemini_vision_client.GeminiVisionClient.analyze_image",
+        "app.services.ai.groq_vision_client.GroqVisionClient.analyze_image",  # was gemini_vision_client
         _fake_analyze_image,
     )
 

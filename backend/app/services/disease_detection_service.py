@@ -29,7 +29,7 @@ from app.repositories import (
     farmer_repository,
     feature_rate_limit_repository,
 )
-from app.services.ai.gemini_vision_client import GeminiVisionClient
+from app.services.ai.groq_vision_client import GroqVisionClient
 from app.services.storage import get_storage_provider
 from app.core.exceptions import (
     BadRequestException,
@@ -132,7 +132,7 @@ class DiseaseDetectionService:
         mime_type = _MIME_TYPES[extension]
 
         try:
-            vision_client = GeminiVisionClient()
+            vision_client = GroqVisionClient()
             ai_output = vision_client.analyze_image(image_bytes, mime_type)
         except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPStatusError) as exc:
             # THIS is what you're missing — log the real cause
@@ -184,7 +184,7 @@ class DiseaseDetectionService:
             severity=severity,
             treatment=treatment,
             prevention_tips=result.get("prevention_tips", []) or [],
-            ai_provider="gemini",
+            ai_provider="groq",
         )
 
         saved_detection = disease_repository.create(db=self.db, detection=detection)
