@@ -47,8 +47,21 @@ export default function Login() {
     }
   };
 
+  <GoogleLogin
+    onSuccess={handleGoogleSuccess}
+    onError={() => {
+      // NEW — this fires when GIS itself fails BEFORE reaching your backend
+      console.error("GoogleLogin onError fired — client-side GIS failure, not a backend rejection.");
+      toast.error("Google sign-in failed. Please try again.");
+    }}
+    useOneTap={false}   // NEW — disable One Tap explicitly, it's the flakiest mobile path
+    width="100%"
+    text="continue_with"
+    shape="pill"
+  />
+
   return (
-    <section className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-green-50 px-6">
+    <section className="flex min-h-screen flex-col justify-start px-6 py-10 lg:flex-row lg:items-center lg:justify-center lg:py-0 bg-gradient-to-br from-emerald-50 via-white to-green-50">
       <div className="grid w-full max-w-6xl gap-12 lg:grid-cols-2">
         <div className="flex flex-col justify-center">
           <div className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-700">
