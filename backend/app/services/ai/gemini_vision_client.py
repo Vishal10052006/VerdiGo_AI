@@ -12,14 +12,14 @@ Module: Phase 1 → Module 8 → Disease Detection
 Author: VerdiGO Backend Team
 """
 
-import base64
 import json
+import logging
 
-import httpx
+from google import genai
+from google.genai import types
 
 from app.config.settings import settings
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -54,70 +54,57 @@ class GeminiVisionClient:
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY is not configured.")
 
-        self.api_key = settings.GEMINI_API_KEY
-        self.base_url = settings.GEMINI_BASE_URL
-        self.model = settings.GEMINI_VISION_MODEL
-        self.timeout = settings.AI_REQUEST_TIMEOUT
+        self.client = genai.Client(
+            api_key=settings.GEMINI_API_KEY,
+        )
 
-        if not settings.GEMINI_API_KEY.startswith("AIza"):
-            logger.warning("GEMINI_API_KEY doesn't look like a valid Google AI Studio key.")
+        self.model = settings.GEMINI_VISION_MODEL
+
+        logger.info("Gemini Vision initialized")
+        logger.info("Model: %s", self.model)
 
     def analyze_image(self, image_bytes: bytes, mime_type: str) -> dict:
         """
-        Send an image to Gemini Vision and return the parsed
-        structured diagnosis.
-
-        Raises:
-            httpx.HTTPStatusError / httpx.TimeoutException / httpx.ConnectError
-                on transport failure (caller decides fallback/error handling).
-            ValueError
-                if the model didn't return valid JSON matching the schema.
+        Analyze a crop image using the Google GenAI SDK.
+        Returns a structured diagnosis.
         """
 
-        endpoint = (
-            f"{self.base_url}/models/{self.model}:generateContent"
-            f"?key={self.api_key}"
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=[
+                types.Part.from_text(text=DISEASE_ANALYSIS_PROMPT),
+                types.Part.from_bytes(
+                    data=image_bytes,
+                    mime_type=mime_type,
+                ),
+            ],
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                response_mime_type="application/json",
+                max_output_tokens=512,
+            ),
         )
 
-        encoded_image = base64.b64encode(image_bytes).decode("utf-8")
-
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": DISEASE_ANALYSIS_PROMPT},
-                        {
-                            "inline_data": {
-                                "mime_type": mime_type,
-                                "data": encoded_image,
-                            }
-                        },
-                    ],
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.2,  # low — this is a diagnostic task, not creative
-                "maxOutputTokens": 512,
-                "response_mime_type": "application/json",
-            },
-        }
-
-        with httpx.Client(timeout=self.timeout) as client:
-            response = client.post(endpoint, json=payload)
-            response.raise_for_status()
-            data = response.json()
-
-        raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+        if not response.text:
+            raise ValueError("Gemini returned an empty response.")
 
         try:
-            parsed = json.loads(raw_text)
+            parsed = json.loads(response.text)
         except json.JSONDecodeError as exc:
             raise ValueError(
-                f"Gemini Vision returned non-JSON output: {raw_text[:200]}"
+                f"Gemini returned invalid JSON:\n{response.text}"
             ) from exc
+
+        tokens = 0
+
+        if (
+            hasattr(response, "usage_metadata")
+            and response.usage_metadata
+            and hasattr(response.usage_metadata, "total_token_count")
+        ):
+            tokens = response.usage_metadata.total_token_count
 
         return {
             "result": parsed,
-            "tokens": data.get("usageMetadata", {}).get("totalTokenCount", 0),
+            "tokens": tokens,
         }

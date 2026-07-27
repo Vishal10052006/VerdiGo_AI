@@ -29,7 +29,7 @@ from app.repositories import (
     farmer_repository,
     feature_rate_limit_repository,
 )
-from app.services.ai.groq_vision_client import GroqVisionClient
+from app.services.ai.gemini_vision_client import GeminiVisionClient
 from app.services.storage import get_storage_provider
 from app.core.exceptions import (
     BadRequestException,
@@ -131,27 +131,35 @@ class DiseaseDetectionService:
         # ----------------------------------------------------------------
         mime_type = _MIME_TYPES[extension]
 
+        vision_client = GeminiVisionClient()
+
         try:
-            vision_client = GroqVisionClient()
-            ai_output = vision_client.analyze_image(image_bytes, mime_type)
+            ai_output = vision_client.analyze_image(
+                image_bytes=image_bytes,
+                mime_type=mime_type,
+            )
+            result = ai_output["result"]
+
         except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPStatusError) as exc:
             status = getattr(getattr(exc, "response", None), "status_code", None)
             body = getattr(getattr(exc, "response", None), "text", None)
-            logger.error(
-                "AI Vision request failed | provider=%s | type=%s | status=%s | body=%s",
-                vision_client.__class__.__name__,   # dynamically shows GroqVisionClient / GeminiVisionClient / whatever
-                type(exc).__name__, status, body,
-            )
-            raise ServiceUnavailableException(
-                message="AI Vision service is temporarily unavailable. Please try again shortly."
-            )
-        except ValueError as exc:
-            logger.error("Gemini Vision config/parse error: %s", exc)
-            raise ServiceUnavailableException(
-                message="AI Vision could not analyze this image. Please try a clearer photo."
+
+            logger.exception(
+                "Gemini Vision request failed | status=%s | body=%s",
+                status,
+                body,
             )
 
-        result = ai_output["result"]
+            raise ServiceUnavailableException(
+                message="AI Vision service is temporarily unavailable. Please try again shortly."
+            ) from exc
+
+        except ValueError as exc:
+            logger.exception("Gemini Vision returned invalid JSON.")
+
+            raise ServiceUnavailableException(
+                message="AI Vision could not analyze this image. Please try a clearer photo."
+            ) from exc
 
         # ----------------------------------------------------------------
         # Persist Image (via storage provider — local or R2)
@@ -184,7 +192,7 @@ class DiseaseDetectionService:
             severity=severity,
             treatment=treatment,
             prevention_tips=result.get("prevention_tips", []) or [],
-            ai_provider="groq",
+            ai_provider="gemini",
         )
 
         saved_detection = disease_repository.create(db=self.db, detection=detection)

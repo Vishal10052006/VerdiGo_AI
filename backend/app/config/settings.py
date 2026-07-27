@@ -58,26 +58,25 @@ class Settings(BaseSettings):
     # =========================
     GEMINI_API_KEY: str = ""
     GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_VISION_MODEL: str = "gemini-2.5-flash"
+    AI_REQUEST_TIMEOUT: int = 60
 
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     OPENAI_MODEL: str = "gpt-4o-mini"
 
-    GROQ_API_KEY: str = ""
+    # ============================
+    # Disease Detection (AI Vision)
+    # ============================
 
-    AI_REQUEST_TIMEOUT: int = 30
+    GEMINI_API_KEY: str = ""
+    GEMINI_VISION_MODEL: str = "gemini-2.5-flash-lite"
+
+    GROQ_API_KEY: str = ""
+    GROQ_VISION_MODEL: str = "qwen/qwen3.6-27b"
+
     AI_DAILY_MESSAGE_LIMIT: int = 100  # per-farmer rate limit — cost control
     AI_DAILY_VISION_LIMIT: int = 20
-
-
-    # =========================
-    # Disease Detection (AI Vision)
-    # =========================
-    DISEASE_UPLOAD_DIR: str = "uploads/disease"
-    GEMINI_VISION_MODEL: str = "gemini-2.0-flash"  # multimodal — reuse existing GEMINI_API_KEY
-
-    GROQ_VISION_MODEL: str = "qwen/qwen3.6-27b"
 
     # =========================
     # CORS
