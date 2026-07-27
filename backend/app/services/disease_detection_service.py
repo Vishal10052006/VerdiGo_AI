@@ -135,11 +135,11 @@ class DiseaseDetectionService:
             vision_client = GroqVisionClient()
             ai_output = vision_client.analyze_image(image_bytes, mime_type)
         except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPStatusError) as exc:
-            # THIS is what you're missing — log the real cause
             status = getattr(getattr(exc, "response", None), "status_code", None)
             body = getattr(getattr(exc, "response", None), "text", None)
             logger.error(
-                "Gemini Vision request failed | type=%s | status=%s | body=%s",
+                "AI Vision request failed | provider=%s | type=%s | status=%s | body=%s",
+                vision_client.__class__.__name__,   # dynamically shows GroqVisionClient / GeminiVisionClient / whatever
                 type(exc).__name__, status, body,
             )
             raise ServiceUnavailableException(

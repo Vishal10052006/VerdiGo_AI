@@ -63,17 +63,6 @@ class GroqVisionClient:
         self.timeout = settings.AI_REQUEST_TIMEOUT
 
     def analyze_image(self, image_bytes: bytes, mime_type: str) -> dict:
-        """
-        Send an image to Groq Vision and return the parsed
-        structured diagnosis. Signature matches GeminiVisionClient
-        exactly so it's a drop-in replacement in
-        disease_detection_service.py.
-
-        Raises:
-            httpx.HTTPStatusError / httpx.TimeoutException / httpx.ConnectError
-            ValueError — if the model didn't return valid JSON.
-        """
-
         endpoint = f"{self.base_url}/chat/completions"
 
         encoded_image = base64.b64encode(image_bytes).decode("utf-8")
@@ -92,7 +81,12 @@ class GroqVisionClient:
             ],
             "temperature": 0.2,
             "max_tokens": 512,
-            "response_format": {"type": "json_object"},
+            # REMOVED: response_format json_object — Groq's strict server-side
+            # validator rejects qwen3.6-27b's output (likely markdown-fenced
+            # JSON or trailing text), even when the JSON itself is fine once
+            # extracted. We validate/parse client-side instead — more
+            # forgiving and matches how GeminiVisionClient never needed this
+            # either.
         }
 
         headers = {"Authorization": f"Bearer {self.api_key}"}
@@ -103,17 +97,42 @@ class GroqVisionClient:
             data = response.json()
 
         raw_text = data["choices"][0]["message"]["content"]
-
-        try:
-            parsed = json.loads(raw_text)
-        except json.JSONDecodeError as exc:
-            raise ValueError(
-                f"Groq Vision returned non-JSON output: {raw_text[:200]}"
-            ) from exc
+        parsed = self._extract_json(raw_text)
 
         tokens = data.get("usage", {}).get("total_tokens", 0)
 
         return {"result": parsed, "tokens": tokens}
+
+
+    @staticmethod
+    def _extract_json(raw_text: str) -> dict:
+        """
+        Defensively extract a JSON object from model output that may be
+        wrapped in markdown code fences (```json ... ```) or have leading/
+        trailing prose — vision-preview models are less reliable about
+        "ONLY JSON, nothing else" instructions than text models.
+        """
+        text = raw_text.strip()
+
+        # Strip markdown code fences if present
+        if text.startswith("```"):
+            text = text.strip("`")
+            if text.lower().startswith("json"):
+                text = text[4:]
+            text = text.strip()
+
+        # If there's still leading/trailing prose, grab the outermost {...}
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            text = text[start:end + 1]
+
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"Groq Vision returned unparseable output: {raw_text[:200]}"
+            ) from exc
 
 
 
