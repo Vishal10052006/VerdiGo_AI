@@ -47,7 +47,7 @@ export interface DashboardFarm {
 export interface DashboardResponse {
   farmer: DashboardFarmer;
   statistics: DashboardStatistics;
-  weather: DashboardWeather;
-  primary_farm: DashboardPrimaryFarm;
+  weather: DashboardWeather | null; 
+  primary_farm: DashboardPrimaryFarm | null;
   farms: DashboardFarm[];
 }

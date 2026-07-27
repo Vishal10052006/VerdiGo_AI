@@ -21,6 +21,8 @@ Author: VerdiGO Backend Team
 from datetime import datetime
 from uuid import UUID
 
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.repositories.dashboard import get_dashboard_data
@@ -38,6 +40,9 @@ from app.schemas.weather import (
 )
 from app.utils.ttl_cache import dashboard_cache
 from app.constants.dashboard import DASHBOARD_CACHE_TTL_SECONDS
+
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -128,19 +133,32 @@ def get_dashboard_summary(
 
     weather = None
 
-    if primary_farm_model is not None:
-
+    if primary_farm_model:
         weather_service = WeatherService(db)
 
-        weather_data = weather_service.get_current_weather(
-            farm_id=primary_farm_model.id,
-            latitude=primary_farm_model.latitude,
-            longitude=primary_farm_model.longitude,
-        )
+        try:
+            weather_data = weather_service.get_current_weather(
+                farm_id=primary_farm_model.id,
+                latitude=primary_farm_model.latitude,
+                longitude=primary_farm_model.longitude,
+            )
+            weather = CurrentWeatherSchema.model_validate(weather_data)
 
-        weather = CurrentWeatherSchema.model_validate(
-            weather_data
-        )
+        except Exception as exc:
+            # Weather is explicitly optional in DashboardDataSchema — a
+            # provider outage (missing API key, timeout, bad response shape)
+            # must never take down the whole dashboard. Log and degrade
+            # gracefully instead of 500ing the entire endpoint.
+            logger.warning(
+                "Dashboard weather fetch failed for farm_id=%s: %s",
+                primary_farm_model.id,
+                exc,
+            )
+            weather = None
+
+    # ============================================================================
+    # Registered Days
+    # ============================================================================
 
     registered_days = (
         datetime.now(farmer_profile.created_at.tzinfo)

@@ -84,22 +84,30 @@ export default function DashboardPage() {
                 provider={dashboard.weather.provider}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center rounded-3xl border bg-white p-6 text-center text-slate-400 shadow-sm">
-                <CloudSun className="mb-3 h-10 w-10" />
-                <p className="text-sm">Weather data is currently unavailable for your farm.</p>
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-sm text-slate-500">
+                  Weather data isn't available yet for your farm. This usually resolves once your
+                  farm's location is fully set up.
+                </p>
               </div>
             )}
 
-            <FarmSummaryCard
-              farmName={dashboard.primary_farm.farm_name}
-              village={dashboard.primary_farm.village}
-              district={dashboard.primary_farm.district}
-              state={dashboard.primary_farm.state}
-              soilType={dashboard.farms[0]?.soil_type ?? "Unknown"}
-              landArea={dashboard.farms[0]?.land_area ?? "0"}
-              landUnit={dashboard.farms[0]?.land_unit ?? ""}
-              totalFarms={dashboard.statistics.total_farms}
-            />
+            {dashboard.primary_farm ? (
+              <FarmSummaryCard
+                farmName={dashboard.primary_farm.farm_name}
+                village={dashboard.primary_farm.village}
+                district={dashboard.primary_farm.district}
+                state={dashboard.primary_farm.state}
+                soilType={dashboard.farms[0]?.soil_type ?? "Unknown"}
+                landArea={dashboard.farms[0]?.land_area ?? "0"}
+                landUnit={dashboard.farms[0]?.land_unit ?? ""}
+                totalFarms={dashboard.statistics.total_farms}
+              />
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-sm text-slate-500">No farm registered yet.</p>
+              </div>
+            )}
           </section>
 
           <QuickActions />
