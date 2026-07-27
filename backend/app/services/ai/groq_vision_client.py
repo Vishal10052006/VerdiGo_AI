@@ -14,6 +14,7 @@ Author: VerdiGO Backend Team
 
 import base64
 import json
+import re
 
 import httpx
 
@@ -22,7 +23,10 @@ from app.config.settings import settings
 
 DISEASE_ANALYSIS_PROMPT = """You are an expert plant pathologist analyzing a crop image for an Indian smallholder farmer.
 
+Respond immediately with ONLY a JSON object — do not include any reasoning, analysis steps, or <think> blocks before your answer.
+
 Look at the image carefully and respond with ONLY a JSON object (no markdown, no prose, no code fences) matching exactly this schema:
+...
 
 {
   "is_healthy": boolean,
@@ -80,7 +84,8 @@ class GroqVisionClient:
                 }
             ],
             "temperature": 0.2,
-            "max_tokens": 512,
+            "max_tokens": 1024,          # was 512 — raised as a safety margin too
+            "reasoning_format": "hidden",  # NEW — suppress <think> block entirely
         }
 
         headers = {"Authorization": f"Bearer {self.api_key}"}
@@ -102,17 +107,37 @@ class GroqVisionClient:
         tokens = data.get("usage", {}).get("total_tokens", 0)
 
         return {"result": parsed, "tokens": tokens}
-
+    
 
     @staticmethod
     def _extract_json(raw_text: str) -> dict:
         """
-        Defensively extract a JSON object from model output that may be
-        wrapped in markdown code fences (```json ... ```) or have leading/
-        trailing prose — vision-preview models are less reliable about
-        "ONLY JSON, nothing else" instructions than text models.
+        Defensively extract a JSON object from model output that may
+        include:
+        - <think>...</think> reasoning blocks (reasoning models like
+        qwen3.6 emit these before the actual answer)
+        - markdown code fences (```json ... ```)
+        - leading/trailing prose
         """
         text = raw_text.strip()
+
+        # NEW — strip <think>...</think> reasoning blocks first.
+        # Non-greedy, handles multiple blocks, case-insensitive tag.
+        text = re.sub(
+            r"<think>.*?</think>",
+            "",
+            text,
+            flags=re.IGNORECASE | re.DOTALL,
+        ).strip()
+
+        # Handle an UNCLOSED <think> block (truncated mid-reasoning,
+        # e.g. ran out of max_tokens) — everything after the opening
+        # tag is reasoning noise with no JSON to recover.
+        if "<think>" in text.lower() and "</think>" not in text.lower():
+            raise ValueError(
+                "Groq Vision response was truncated mid-reasoning "
+                "(ran out of tokens before producing JSON)."
+            )
 
         # Strip markdown code fences if present
         if text.startswith("```"):
@@ -121,11 +146,14 @@ class GroqVisionClient:
                 text = text[4:]
             text = text.strip()
 
-        # If there's still leading/trailing prose, grab the outermost {...}
+        # Grab the outermost {...} in case of remaining leading/trailing prose
         start = text.find("{")
         end = text.rfind("}")
         if start != -1 and end != -1 and end > start:
             text = text[start:end + 1]
+
+        if not text:
+            raise ValueError("Groq Vision returned empty content after cleanup.")
 
         try:
             return json.loads(text)
