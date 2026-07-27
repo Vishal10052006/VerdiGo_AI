@@ -40,6 +40,10 @@ from app.core.exceptions import (
 from app.services.notification_service import NotificationService
 from app.enums.notification import NotificationTypeEnum, NotificationSeverityEnum
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 _MIME_TYPES = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
@@ -130,11 +134,19 @@ class DiseaseDetectionService:
         try:
             vision_client = GeminiVisionClient()
             ai_output = vision_client.analyze_image(image_bytes, mime_type)
-        except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPStatusError):
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPStatusError) as exc:
+            # THIS is what you're missing — log the real cause
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            body = getattr(getattr(exc, "response", None), "text", None)
+            logger.error(
+                "Gemini Vision request failed | type=%s | status=%s | body=%s",
+                type(exc).__name__, status, body,
+            )
             raise ServiceUnavailableException(
                 message="AI Vision service is temporarily unavailable. Please try again shortly."
             )
-        except ValueError:
+        except ValueError as exc:
+            logger.error("Gemini Vision config/parse error: %s", exc)
             raise ServiceUnavailableException(
                 message="AI Vision could not analyze this image. Please try a clearer photo."
             )

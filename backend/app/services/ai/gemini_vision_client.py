@@ -19,6 +19,9 @@ import httpx
 
 from app.config.settings import settings
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 DISEASE_ANALYSIS_PROMPT = """You are an expert plant pathologist analyzing a crop image for an Indian smallholder farmer.
 
@@ -55,6 +58,9 @@ class GeminiVisionClient:
         self.base_url = settings.GEMINI_BASE_URL
         self.model = settings.GEMINI_VISION_MODEL
         self.timeout = settings.AI_REQUEST_TIMEOUT
+
+        if not settings.GEMINI_API_KEY.startswith("AIza"):
+            logger.warning("GEMINI_API_KEY doesn't look like a valid Google AI Studio key.")
 
     def analyze_image(self, image_bytes: bytes, mime_type: str) -> dict:
         """

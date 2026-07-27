@@ -66,7 +66,7 @@ class Settings(BaseSettings):
 
     GROQ_API_KEY: str = ""
 
-    AI_REQUEST_TIMEOUT: int = 15
+    AI_REQUEST_TIMEOUT: int = 30
     AI_DAILY_MESSAGE_LIMIT: int = 100  # per-farmer rate limit — cost control
     AI_DAILY_VISION_LIMIT: int = 20
 
