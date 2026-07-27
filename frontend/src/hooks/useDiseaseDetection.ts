@@ -29,7 +29,10 @@ export function useDiseaseDetection(): UseDiseaseDetectionResult {
       const status = err?.response?.status;
 
       if (status === 503 || status === 502) {
-        setError("AI Vision is temporarily unavailable. Please try again shortly.");
+        setError(
+          err?.response?.data?.detail ??
+            "AI Vision is temporarily unavailable. Please try again shortly."
+        );
       } else if (status === 429) {
         setError(err?.response?.data?.detail ?? "Daily scan limit reached. Try again tomorrow.");
       } else if (status === 400) {

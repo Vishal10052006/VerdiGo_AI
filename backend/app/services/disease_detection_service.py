@@ -29,7 +29,7 @@ from app.repositories import (
     farmer_repository,
     feature_rate_limit_repository,
 )
-from app.services.ai.gemini_vision_client import GeminiVisionClient
+from app.services.ai.groq_vision_client import GroqVisionClient
 from app.services.storage import get_storage_provider
 from app.core.exceptions import (
     BadRequestException,
@@ -131,7 +131,7 @@ class DiseaseDetectionService:
         # ----------------------------------------------------------------
         mime_type = _MIME_TYPES[extension]
 
-        vision_client = GeminiVisionClient()
+        vision_client = GroqVisionClient()
 
         try:
             ai_output = vision_client.analyze_image(
@@ -143,22 +143,21 @@ class DiseaseDetectionService:
         except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPStatusError) as exc:
             status = getattr(getattr(exc, "response", None), "status_code", None)
             body = getattr(getattr(exc, "response", None), "text", None)
-
-            logger.exception(
-                "Gemini Vision request failed | status=%s | body=%s",
-                status,
-                body,
-            )
-
+            logger.exception("Groq Vision request failed | status=%s | body=%s", status, body)
             raise ServiceUnavailableException(
                 message="AI Vision service is temporarily unavailable. Please try again shortly."
             ) from exc
 
         except ValueError as exc:
-            logger.exception("Gemini Vision returned invalid JSON.")
-
+            logger.exception("Groq Vision returned invalid/unparseable JSON.")
             raise ServiceUnavailableException(
                 message="AI Vision could not analyze this image. Please try a clearer photo."
+            ) from exc
+
+        except Exception as exc:  # NEW — final safety net, never leak a raw 500
+            logger.exception("Unexpected error during disease detection AI call")
+            raise ServiceUnavailableException(
+                message="Something went wrong analyzing this image. Please try again."
             ) from exc
 
         # ----------------------------------------------------------------
@@ -192,7 +191,7 @@ class DiseaseDetectionService:
             severity=severity,
             treatment=treatment,
             prevention_tips=result.get("prevention_tips", []) or [],
-            ai_provider="gemini",
+            ai_provider="groq",
         )
 
         saved_detection = disease_repository.create(db=self.db, detection=detection)

@@ -81,12 +81,6 @@ class GroqVisionClient:
             ],
             "temperature": 0.2,
             "max_tokens": 512,
-            # REMOVED: response_format json_object — Groq's strict server-side
-            # validator rejects qwen3.6-27b's output (likely markdown-fenced
-            # JSON or trailing text), even when the JSON itself is fine once
-            # extracted. We validate/parse client-side instead — more
-            # forgiving and matches how GeminiVisionClient never needed this
-            # either.
         }
 
         headers = {"Authorization": f"Bearer {self.api_key}"}
@@ -96,9 +90,15 @@ class GroqVisionClient:
             response.raise_for_status()
             data = response.json()
 
-        raw_text = data["choices"][0]["message"]["content"]
-        parsed = self._extract_json(raw_text)
+        choices = data.get("choices") or []
+        if not choices:
+            raise ValueError(f"Groq Vision returned no choices: {data}")
 
+        raw_text = choices[0].get("message", {}).get("content", "")
+        if not raw_text:
+            raise ValueError(f"Groq Vision returned empty content: {data}")
+
+        parsed = self._extract_json(raw_text)
         tokens = data.get("usage", {}).get("total_tokens", 0)
 
         return {"result": parsed, "tokens": tokens}
